@@ -2,9 +2,9 @@ package com.example.todo.entity;
 
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
+import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.HashSet;
@@ -15,6 +15,7 @@ import static javax.persistence.FetchType.EAGER;
 
 @Entity
 public class UserEntity extends AbstractPersistable<Long> {
+    @Column(length=16)
     @NotNull
     private UUID identifier;
 

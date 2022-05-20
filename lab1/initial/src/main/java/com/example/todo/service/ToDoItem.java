@@ -1,19 +1,14 @@
-package com.example.todo.entity;
+package com.example.todo.service;
 
-import org.springframework.data.jpa.domain.AbstractPersistable;
+import com.example.todo.entity.ToDoItemEntity;
 
-import javax.persistence.Entity;
-import javax.persistence.ManyToOne;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import static javax.persistence.CascadeType.ALL;
-import static javax.persistence.FetchType.EAGER;
-
-@Entity
-public class ToDoEntity extends AbstractPersistable<Long> {
+public class ToDoItem implements Serializable {
     private UUID identifier;
 
     @Size(min = 1, max = 30)
@@ -22,22 +17,28 @@ public class ToDoEntity extends AbstractPersistable<Long> {
     @Size(max = 30)
     private String description;
 
-    @NotNull
     private LocalDate dueDate;
 
     @NotNull
-    @ManyToOne(fetch = EAGER, cascade = ALL)
-    private UserEntity userEntity;
+    private User user;
 
-    public ToDoEntity() {
+    public ToDoItem() {
     }
 
-    public ToDoEntity(UUID identifier, String title, String description, LocalDate dueDate, UserEntity userEntity) {
+    public ToDoItem(UUID identifier, String title, String description, LocalDate dueDate, User user) {
         this.identifier = identifier;
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
-        this.userEntity = userEntity;
+        this.user = user;
+    }
+
+    public ToDoItem(ToDoItemEntity toDoItemEntity) {
+        this.identifier = toDoItemEntity.getIdentifier();
+        this.description = toDoItemEntity.getDescription();
+        this.dueDate = toDoItemEntity.getDueDate();
+        this.title = toDoItemEntity.getTitle();
+        this.user = new User(toDoItemEntity.getUserEntity());
     }
 
     public UUID getIdentifier() {
@@ -56,18 +57,26 @@ public class ToDoEntity extends AbstractPersistable<Long> {
         return dueDate;
     }
 
-    public UserEntity getUserEntity() {
-        return userEntity;
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public ToDoItemEntity toTodoItemEntity() {
+        return new ToDoItemEntity(this.identifier, this.title, this.description, this.dueDate, this.user.toUserEntity());
     }
 
     @Override
     public String toString() {
-        return "ToDoEntity{" +
+        return "ToDoItem{" +
                 "identifier=" + identifier +
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", dueDate=" + dueDate +
-                ", userEntity=" + userEntity +
+                ", user=" + user +
                 "} " + super.toString();
     }
 }

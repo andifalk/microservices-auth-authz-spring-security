@@ -1,0 +1,39 @@
+server:
+  servlet:
+    context-path: /
+  port: 9095
+  error:
+    include-stacktrace: never
+
+spring:
+  thymeleaf:
+    cache: false
+  security:
+    oauth2:
+      client:
+        registration:
+          spring-authz-server:
+            client-id: 'demo-client'
+            client-secret: 'secret'
+            authorizationGrantType: authorization_code
+            redirect-uri: '{baseUrl}/login/oauth2/code/{registrationId}'
+            #client-authentication-method: none
+            scope:
+              - openid
+              - profile
+              - email
+        provider:
+          spring-authz-server:
+            issuerUri: http://localhost:9000
+            user-info-uri: http://localhost:9000/userinfo
+            user-name-attribute: name
+
+logging:
+  level:
+    root: info
+    org:
+      springframework:
+        web: debug
+
+library:
+  server: http://localhost:9090

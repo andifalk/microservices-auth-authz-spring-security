@@ -1,3 +1,4 @@
+
 spring:
   application:
     name: ToDoApp
@@ -22,3 +23,10 @@ management:
     web:
       exposure:
         include: '*'
+  health:
+    readinessstate:
+      enabled: on
+    livenessstate:
+      enabled: on
+server:
+  port: 9090

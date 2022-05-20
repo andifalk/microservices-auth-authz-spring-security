@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ToDoUserDetailsService implements UserDetailsService {
-
     private final UserService userService;
 
     public ToDoUserDetailsService(UserService userService) {

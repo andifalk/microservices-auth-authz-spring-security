@@ -1,2 +1,3 @@
 rootProject.name = 'microservices-auth-authz-spring-security'
 include 'lab1:initial'
+include 'test-client'

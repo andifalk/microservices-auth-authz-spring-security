@@ -1,0 +1,30 @@
+<html lang="en" xmlns:sec="http://www.thymeleaf.org/extras/dialect" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Test Client</title>
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/>
+    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+    <link href="../static/css/bootstrap.css" rel="stylesheet" th:href="@{/css/bootstrap.css}"/>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Test Client</h1>
+
+    <hr>
+
+    <div class="jumbotron">
+        <a class="btn btn-primary" href="#" role="button" th:href="@{/main}">Login</a>
+        <a class="btn btn-primary" href="#" role="button" th:href="@{/logout}">Logout</a>
+    </div>
+
+    <hr>
+
+    <script src="../static/js/jquery.min.js" th:href="@{/js/jquery.min.js}" th:src="@{/js/jquery.min.js}"></script>
+    <script src="../static/js/popper.min.js" th:href="@{/js/popper.min.js}" th:src="@{/js/popper.min.js}"></script>
+    <script src="../static/js/bootstrap.js" th:href="@{/js/bootstrap.js}" th:src="@{/js/bootstrap.js}"></script>
+
+</div>
+
+</body>
+</html>

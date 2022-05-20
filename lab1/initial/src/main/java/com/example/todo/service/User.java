@@ -1,6 +1,7 @@
 package com.example.todo.service;
 
 import com.example.todo.entity.UserEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -70,51 +71,65 @@ public class User implements UserDetails {
         return username;
     }
 
+    @JsonIgnore
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
 
+    @JsonIgnore
     @Override
     public boolean isAccountNonLocked() {
         return true;
     }
 
+    @JsonIgnore
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
+    @JsonIgnore
     @Override
     public boolean isEnabled() {
         return true;
     }
 
+    @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return AuthorityUtils.commaSeparatedStringToAuthorityList(
-                getRoles().stream().map(r -> "ROLE_" + r).collect(Collectors.joining())
+                getRoles().stream().map(r -> "ROLE_" + r).collect(Collectors.joining(","))
         );
     }
 
+    @JsonIgnore
     @Override
     public String getPassword() {
         return password;
     }
 
+    @JsonIgnore
     public Set<String> getRoles() {
         return roles;
     }
 
+    @JsonIgnore
+    public boolean isAdmin() {
+        return getRoles().contains("ADMIN");
+    }
+
     @Override
     public String toString() {
-        return "UserEntity{" +
+        return "User{" +
                 "identifier=" + identifier +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
-                ", roles=" + roles +
+                ", password='******'" +
+                ", admin='" + isAdmin() + '\'' +
+                ", roles=" + roles + '\'' +
+                ", authz=" + getAuthorities() +
                 "} " + super.toString();
     }
 
@@ -123,6 +138,4 @@ public class User implements UserDetails {
                 this.identifier, this.firstName, this.lastName,
                 this.username, this.password, this.roles);
     }
-
-
 }
