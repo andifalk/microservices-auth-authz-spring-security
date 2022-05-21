@@ -19,6 +19,10 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class ToDoWebSecurityConfiguration {
 
+    /*
+     * Do NOT route those requests through the security filter chain.
+     * Use with care, not recommended.
+     */
     @Bean
     @Order(1)
     public WebSecurityCustomizer ignoringCustomizer() {
@@ -28,6 +32,10 @@ public class ToDoWebSecurityConfiguration {
                 );
     }
 
+    /*
+     * Allow access to open H2 console for all (do not allow this for PROD, disable H2 console completely there !!)
+     * Also disables CSRF and Clickjacking protection to make H2 console work (disable security features with care).
+     */
     @Bean
     @Order(2)
     public SecurityFilterChain h2console(HttpSecurity http) throws Exception {
@@ -37,6 +45,11 @@ public class ToDoWebSecurityConfiguration {
         return http.build();
     }
 
+    /*
+     * Configure actuator endpoint security.
+     * Allow access for everyone to health, info and prometheus.
+     * All other actuator endpoints require ADMIn role.
+     */
     @Bean
     @Order(3)
     public SecurityFilterChain actuator(HttpSecurity http) throws Exception {
@@ -55,6 +68,9 @@ public class ToDoWebSecurityConfiguration {
         return http.build();
     }
 
+    /*
+     * Security configuration for user and todos Rest API.
+     */
     @Bean
     @Order(4)
     public SecurityFilterChain api(HttpSecurity http) throws Exception {
@@ -62,7 +78,10 @@ public class ToDoWebSecurityConfiguration {
                 .authorizeRequests()
                 .mvcMatchers("/api/users").hasRole("ADMIN")
                 .anyRequest().hasAnyRole("USER", "ADMIN")
-                .and().httpBasic(withDefaults()).formLogin(withDefaults());
+                .and()
+                // only disable CSRF for demo purposes or when NOT using session cookies for auth
+                .csrf().disable()
+                .httpBasic(withDefaults()).formLogin(withDefaults());
         return http.build();
     }
 

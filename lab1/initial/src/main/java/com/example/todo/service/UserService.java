@@ -2,6 +2,7 @@ package com.example.todo.service;
 
 import com.example.todo.entity.UserEntityRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,8 +17,11 @@ public class UserService {
 
     private final UserEntityRepository userEntityRepository;
 
-    public UserService(UserEntityRepository userEntityRepository) {
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(UserEntityRepository userEntityRepository, PasswordEncoder passwordEncoder) {
         this.userEntityRepository = userEntityRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Optional<User> findOneByUsername(String username) {
@@ -35,7 +39,11 @@ public class UserService {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
-    public User create(User user) {
+    public User create(CreateUser user) {
+        if (user.getIdentifier() == null) {
+            user.setIdentifier(UUID.randomUUID());
+        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         return new User(userEntityRepository.save(user.toUserEntity()));
     }
 }

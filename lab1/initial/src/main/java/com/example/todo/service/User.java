@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.Collection;
@@ -15,7 +16,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class User implements UserDetails {
-    @NotNull
     private UUID identifier;
 
     @Size(min = 1, max = 30)
@@ -27,8 +27,12 @@ public class User implements UserDetails {
     @Size(min = 1, max = 30)
     private String username;
 
-    @Size(min = 10, max = 100)
-    private String password;
+    @Email
+    @Size(min = 1, max = 50)
+    private String email;
+
+    @Size(max = 100)
+    protected String password;
 
     @NotNull
     private Set<String> roles = new HashSet<>();
@@ -36,11 +40,12 @@ public class User implements UserDetails {
     public User() {
     }
 
-    public User(UUID identifier, String firstName, String lastName, String username, String password, Set<String> roles) {
+    public User(UUID identifier, String firstName, String lastName, String username, String email, String password, Set<String> roles) {
         this.identifier = identifier;
         this.firstName = firstName;
         this.lastName = lastName;
         this.username = username;
+        this.email = email;
         this.password = password;
         this.roles = roles;
     }
@@ -50,12 +55,17 @@ public class User implements UserDetails {
         this.firstName = userEntity.getFirstName();
         this.lastName = userEntity.getLastName();
         this.username = userEntity.getUsername();
+        this.email = userEntity.getEmail();
         this.password = userEntity.getPassword();
         this.roles = userEntity.getRoles();
     }
 
     public UUID getIdentifier() {
         return identifier;
+    }
+
+    public void setIdentifier(UUID identifier) {
+        this.identifier = identifier;
     }
 
     public String getFirstName() {
@@ -69,6 +79,10 @@ public class User implements UserDetails {
     @Override
     public String getUsername() {
         return username;
+    }
+
+    public String getEmail() {
+        return email;
     }
 
     @JsonIgnore
@@ -109,6 +123,10 @@ public class User implements UserDetails {
         return password;
     }
 
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     @JsonIgnore
     public Set<String> getRoles() {
         return roles;
@@ -126,6 +144,7 @@ public class User implements UserDetails {
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
                 ", password='******'" +
                 ", admin='" + isAdmin() + '\'' +
                 ", roles=" + roles + '\'' +
@@ -136,6 +155,6 @@ public class User implements UserDetails {
     UserEntity toUserEntity() {
         return new UserEntity(
                 this.identifier, this.firstName, this.lastName,
-                this.username, this.password, this.roles);
+                this.username, this.email, this.password, this.roles);
     }
 }

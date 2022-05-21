@@ -11,6 +11,9 @@ spring:
     generate-ddl: on
     hibernate:
       ddl-auto: create-drop
+  jackson:
+    default-property-inclusion: non_null
+
 
 logging:
   level:
@@ -30,3 +33,5 @@ management:
       enabled: on
 server:
   port: 9090
+  error:
+    include-stacktrace: never

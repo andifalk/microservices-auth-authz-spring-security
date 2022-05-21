@@ -14,12 +14,11 @@ public class ToDoItem implements Serializable {
     @Size(min = 1, max = 30)
     private String title;
 
-    @Size(max = 30)
+    @Size(max = 100)
     private String description;
 
     private LocalDate dueDate;
 
-    @NotNull
     private User user;
 
     public ToDoItem() {
@@ -43,6 +42,10 @@ public class ToDoItem implements Serializable {
 
     public UUID getIdentifier() {
         return identifier;
+    }
+
+    public void setIdentifier(UUID identifier) {
+        this.identifier = identifier;
     }
 
     public String getTitle() {

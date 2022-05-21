@@ -1,5 +1,6 @@
 package com.example.todo.api;
 
+import com.example.todo.service.CreateUser;
 import com.example.todo.service.User;
 import com.example.todo.service.UserService;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -9,8 +10,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +21,7 @@ import static org.springframework.http.HttpStatus.CREATED;
 
 @RestController
 @RequestMapping("/api/users")
+@Validated
 @OpenAPIDefinition(tags = @Tag(name = "user"), info = @Info(title = "User", description = "API for Users", version = "1"), security = {@SecurityRequirement(name = "basicAuth"), @SecurityRequirement(name = "bearer")})
 public class UserRestController {
 
@@ -50,7 +54,7 @@ public class UserRestController {
     @Operation(tags = "user", summary = "User API", description = "Creates a new user")
     @PostMapping
     @ResponseStatus(CREATED)
-    public User createUser(@RequestBody User user) {
+    public User createUser(@RequestBody @Valid CreateUser user) {
         return userService.create(user);
     }
 

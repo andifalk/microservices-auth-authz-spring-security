@@ -15,6 +15,8 @@ import static javax.persistence.FetchType.EAGER;
 
 @Entity
 public class ToDoItemEntity extends AbstractPersistable<Long> {
+
+    // Required fix for H2 UUID column in spring boot 2.7.x
     @Column(length=16)
     @NotNull
     private UUID identifier;
@@ -22,7 +24,7 @@ public class ToDoItemEntity extends AbstractPersistable<Long> {
     @Size(min = 1, max = 30)
     private String title;
 
-    @Size(max = 30)
+    @Size(max = 100)
     private String description;
 
     private LocalDate dueDate;

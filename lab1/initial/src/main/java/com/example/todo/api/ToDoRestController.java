@@ -12,13 +12,16 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/todos")
+@Validated
 @OpenAPIDefinition(tags = @Tag(name = "todo"), info = @Info(title = "ToDo", description = "API for ToDo Items", version = "1"), security = {@SecurityRequirement(name = "basicAuth"), @SecurityRequirement(name = "bearer")})
 public class ToDoRestController {
 
@@ -45,9 +48,9 @@ public class ToDoRestController {
 
     @Operation(tags = "todo", summary = "ToDo API", description = "Creates a new ToDo item for current user")
     @PostMapping
-    public ToDoItem create(@RequestBody ToDoItem toDoItem, @AuthenticationPrincipal User authenticatedUser) {
+    public ToDoItem create(@RequestBody @Valid ToDoItem toDoItem, @AuthenticationPrincipal User authenticatedUser) {
         toDoItem.setUser(authenticatedUser);
-        return toDoService.save(toDoItem);
+        return toDoService.create(toDoItem);
     }
 
     public ToDoRestController(ToDoService toDoService) {

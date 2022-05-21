@@ -42,7 +42,10 @@ public class ToDoService {
     }
 
     @Transactional
-    public ToDoItem save(ToDoItem toDoItem) {
+    public ToDoItem create(ToDoItem toDoItem) {
+        if (toDoItem.getIdentifier() == null) {
+            toDoItem.setIdentifier(UUID.randomUUID());
+        }
         return new ToDoItem(toDoItemEntityRepository.save(toDoItem.toTodoItemEntity()));
     }
 }

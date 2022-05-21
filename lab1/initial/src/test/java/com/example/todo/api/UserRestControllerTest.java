@@ -1,9 +1,10 @@
 package com.example.todo.api;
 
 import com.example.todo.DataInitializer;
+import com.example.todo.service.CreateUser;
 import com.example.todo.service.ToDoItem;
-import com.example.todo.service.ToDoService;
 import com.example.todo.service.User;
+import com.example.todo.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-@WebMvcTest(ToDoRestController.class)
-class ToDoRestControllerTest {
+@WebMvcTest(UserRestController.class)
+class UserRestControllerTest {
 
     @Autowired
     private MockMvc mvc;
@@ -38,37 +39,31 @@ class ToDoRestControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private ToDoService toDoService;
+    private UserService userService;
 
     @Test
-    void findAllForUser() throws Exception {
-        User user = new User(
-                UUID.fromString(DataInitializer.WAYNE_ID),
-                "Bruce", "Wayne",
-                "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER"));
-        UUID todoItemIdentifier = UUID.randomUUID();
-        when(toDoService.findAllForUser(any(), any()))
-                .thenReturn(List.of(new ToDoItem(todoItemIdentifier, "mytodo",
-                        "todo description", null, user)));
+    void findAllUsers() throws Exception {
+        User pParker = getPeterParker();
+        User bWayne = getBruceWayne();
+        when(userService.findAll())
+                .thenReturn(List.of(pParker, bWayne));
         this.mvc.perform(
-                get("/api/todos")
-                        .param("user", DataInitializer.WAYNE_ID)
-                        .with(user(user)))
+                get("/api/users")
+                        .with(user(pParker)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().json(
-                        "[{\"identifier\":\"" + todoItemIdentifier + "\",\"title\":\"mytodo\"," +
-                                "\"description\":\"todo description\",\"user\":{\"identifier\":\"" +
-                                user.getIdentifier() + "\",\"firstName\":\"Bruce\",\"lastName\":\"Wayne\"," +
-                                "\"username\":\"bwayne\", \"email\":\"bruce.wayne@example.com\"}}]"
+                        "[{\"identifier\":\"" + pParker.getIdentifier() + "\",\"firstName\":\"Peter\"," +
+                                "\"lastName\":\"Parker\",\"username\":\"pparker\",\"email\":\"peter.parker@example.com\"}," +
+                                "{\"identifier\":\"" + bWayne.getIdentifier() + "\",\"firstName\":\"Bruce\"," +
+                                "\"lastName\":\"Wayne\",\"username\":\"bwayne\",\"email\":\"bruce.wayne@example.com\"}]"
                 ));
     }
 
     @Test
-    void findAllForUserUnauthorized() throws Exception {
+    void findAllUsersUnauthorized() throws Exception {
         this.mvc.perform(
-                        get("/api/todos")
-                                .param("user", DataInitializer.WAYNE_ID))
+                        get("/api/users"))
                 .andDo(print())
                 .andExpect(status().isUnauthorized());
     }
@@ -79,20 +74,16 @@ class ToDoRestControllerTest {
                 UUID.fromString(DataInitializer.WAYNE_ID),
                 "Bruce", "Wayne",
                 "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER"));
-        UUID todoItemIdentifier = UUID.randomUUID();
-        when(toDoService.findToDoItemForUser(any(), any()))
-                .thenReturn(Optional.of(new ToDoItem(todoItemIdentifier, "mytodo",
-                        "todo description", null, user)));
+        when(userService.findOneByIdentifier(any()))
+                .thenReturn(Optional.of(user));
         this.mvc.perform(
-                        get("/api/todos/{todoidentifier}", todoItemIdentifier.toString())
+                        get("/api/users/{useridentifier}", user.getIdentifier().toString())
                                 .with(user(user)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().json(
-                        "{\"identifier\":\"" + todoItemIdentifier + "\",\"title\":\"mytodo\"," +
-                                "\"description\":\"todo description\",\"user\":{\"identifier\":\"" +
-                                user.getIdentifier() + "\",\"firstName\":\"Bruce\",\"lastName\":\"Wayne\"," +
-                                "\"username\":\"bwayne\", \"email\":\"bruce.wayne@example.com\"}}"
+                        "{\"identifier\":\"" + user.getIdentifier() + "\",\"firstName\":\"Bruce\"," +
+                                "\"lastName\":\"Wayne\",\"username\":\"bwayne\",\"email\":\"bruce.wayne@example.com\"}"
                 ));
     }
 
@@ -105,38 +96,54 @@ class ToDoRestControllerTest {
     }
 
     @Test
-    void createToDoItem() throws Exception {
+    void getAuthenticatedUser() throws Exception {
         User user = new User(
                 UUID.fromString(DataInitializer.WAYNE_ID),
                 "Bruce", "Wayne",
                 "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER"));
+
+        this.mvc.perform(
+                        get("/api/users/me")
+                                .with(user(user)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().json(
+                        "{\"identifier\":\"" + user.getIdentifier() + "\",\"firstName\":\"Bruce\"," +
+                                "\"lastName\":\"Wayne\",\"username\":\"bwayne\",\"email\":\"bruce.wayne@example.com\"}"
+                ));
+    }
+
+    @Test
+    void createUser() throws Exception {
+        CreateUser createUser = new CreateUser(
+                UUID.fromString(DataInitializer.WAYNE_ID),
+                "Bruce", "Wayne",
+                "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER"));
+        User user = getPeterParker();
         UUID todoItemIdentifier = UUID.randomUUID();
         ToDoItem item = new ToDoItem(todoItemIdentifier, "mytodo",
                 "todo description", null, user);
-        when(toDoService.create(any()))
-                .thenReturn(new ToDoItem(todoItemIdentifier, "mytodo",
-                        "todo description", null, user));
+        when(userService.create(any()))
+                .thenReturn(new User(
+                        UUID.fromString(DataInitializer.WAYNE_ID),
+                        "Bruce", "Wayne",
+                        "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER")));
         this.mvc.perform(
-                        post("/api/todos")
+                        post("/api/users")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(item))
                                 .with(user(user)).with(csrf()))
                 .andDo(print())
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(content().json(
-                        "{\"identifier\":\"" + todoItemIdentifier + "\",\"title\":\"mytodo\"," +
-                                "\"description\":\"todo description\",\"user\":{\"identifier\":\"" +
-                                user.getIdentifier() + "\",\"firstName\":\"Bruce\",\"lastName\":\"Wayne\"," +
-                                "\"username\":\"bwayne\", \"email\":\"bruce.wayne@example.com\"}}"
+                        "{\"identifier\":\"" + createUser.getIdentifier() + "\",\"firstName\":\"Bruce\"," +
+                                "\"lastName\":\"Wayne\",\"username\":\"bwayne\",\"email\":\"bruce.wayne@example.com\"}"
                 ));
     }
 
     @Test
     void createToDoItemUnauthorized() throws Exception {
-        User user = new User(
-                UUID.fromString(DataInitializer.WAYNE_ID),
-                "Bruce", "Wayne",
-                "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER"));
+        User user = getBruceWayne();
         UUID todoItemIdentifier = UUID.randomUUID();
         ToDoItem item = new ToDoItem(todoItemIdentifier, "mytodo",
                 "todo description", null, user);
@@ -147,5 +154,19 @@ class ToDoRestControllerTest {
                                 .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isUnauthorized());
+    }
+
+    private User getBruceWayne() {
+        return new User(
+                UUID.fromString(DataInitializer.WAYNE_ID),
+                "Bruce", "Wayne",
+                "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER"));
+    }
+
+    private User getPeterParker() {
+        return new User(
+                UUID.fromString(DataInitializer.PARKER_ID),
+                "Peter", "Parker",
+                "pparker", "peter.parker@example.com", "parker", Set.of("USER", "ADMIN"));
     }
 }
