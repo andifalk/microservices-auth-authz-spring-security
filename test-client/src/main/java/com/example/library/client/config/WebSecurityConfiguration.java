@@ -1,5 +1,7 @@
 package com.example.library.client.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +25,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class WebSecurityConfiguration {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(WebSecurityConfiguration.class);
+
   @Bean
   public SecurityFilterChain otherRequests(HttpSecurity http) throws Exception {
     http.authorizeRequests()
@@ -38,6 +42,9 @@ public class WebSecurityConfiguration {
     return http.build();
   }
 
+  /*
+   * Maps roles to user.
+   */
   private GrantedAuthoritiesMapper userAuthoritiesMapper() {
     return (authorities) -> {
       Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
@@ -45,6 +52,7 @@ public class WebSecurityConfiguration {
       authorities.forEach(
           authority -> {
             if (authority instanceof OidcUserAuthority) {
+              LOGGER.info("Mapping user info data after successful call of userinfo endpoint");
               OidcUserAuthority oidcUserAuthority = (OidcUserAuthority) authority;
 
               OidcUserInfo userInfo = oidcUserAuthority.getUserInfo();
