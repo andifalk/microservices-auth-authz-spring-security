@@ -1,11 +1,6 @@
 package com.example.library.client.web;
 
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 public class ToDoItemResource {

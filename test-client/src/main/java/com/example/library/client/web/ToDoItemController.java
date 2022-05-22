@@ -74,14 +74,8 @@ public class ToDoItemController {
         .onStatus(
             HttpStatus::is5xxServerError,
             cr -> Mono.just(new Exception(cr.statusCode().getReasonPhrase())))
-        .bodyToMono(ToDoItemListResource.class)
-        .log()
-        .map(ToDoItemListResource::get_embedded)
-        .map(EmbeddedToDoItemListResource::getToDoItemResourceList)
-        .map(
-            c -> {
-              model.addAttribute("todos", c);
-              return "todos";
-            });
+        .bodyToFlux(ToDoItemResource.class)
+        .collectList().map(c -> model.addAttribute("todos", c))
+        .then(Mono.just("todos"));
   }
 }
