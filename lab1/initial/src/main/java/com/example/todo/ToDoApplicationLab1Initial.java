@@ -1,6 +1,5 @@
 package com.example.todo;
 
-import io.swagger.v3.oas.annotations.security.OAuthFlows;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.security.SecuritySchemes;
 import org.springframework.boot.SpringApplication;
@@ -21,10 +20,10 @@ import static io.swagger.v3.oas.annotations.enums.SecuritySchemeType.*;
         )}
 )
 @SpringBootApplication
-public class ToDoApplication {
+public class ToDoApplicationLab1Initial {
 
     public static void main(String[] args) {
-        SpringApplication.run(ToDoApplication.class, args);
+        SpringApplication.run(ToDoApplicationLab1Initial.class, args);
     }
 
 }

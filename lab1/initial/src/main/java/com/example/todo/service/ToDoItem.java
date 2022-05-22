@@ -19,17 +19,17 @@ public class ToDoItem implements Serializable {
 
     private LocalDate dueDate;
 
-    private User user;
+    private UUID userIdentifier;
 
     public ToDoItem() {
     }
 
-    public ToDoItem(UUID identifier, String title, String description, LocalDate dueDate, User user) {
+    public ToDoItem(UUID identifier, String title, String description, LocalDate dueDate, UUID userIdentifier) {
         this.identifier = identifier;
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
-        this.user = user;
+        this.userIdentifier = userIdentifier;
     }
 
     public ToDoItem(ToDoItemEntity toDoItemEntity) {
@@ -37,7 +37,7 @@ public class ToDoItem implements Serializable {
         this.description = toDoItemEntity.getDescription();
         this.dueDate = toDoItemEntity.getDueDate();
         this.title = toDoItemEntity.getTitle();
-        this.user = new User(toDoItemEntity.getUserEntity());
+        this.userIdentifier = toDoItemEntity.getUserIdentifier();
     }
 
     public UUID getIdentifier() {
@@ -60,16 +60,16 @@ public class ToDoItem implements Serializable {
         return dueDate;
     }
 
-    public User getUser() {
-        return user;
+    public UUID getUserIdentifier() {
+        return userIdentifier;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setUserIdentifier(UUID userIdentifier) {
+        this.userIdentifier = userIdentifier;
     }
 
     public ToDoItemEntity toTodoItemEntity() {
-        return new ToDoItemEntity(this.identifier, this.title, this.description, this.dueDate, this.user.toUserEntity());
+        return new ToDoItemEntity(this.identifier, this.title, this.description, this.dueDate, this.userIdentifier);
     }
 
     @Override
@@ -79,7 +79,7 @@ public class ToDoItem implements Serializable {
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", dueDate=" + dueDate +
-                ", user=" + user +
+                ", userIdentifier=" + userIdentifier +
                 "} " + super.toString();
     }
 }

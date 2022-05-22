@@ -2,7 +2,6 @@ package com.example.todo.api;
 
 import com.example.todo.DataInitializer;
 import com.example.todo.service.CreateUser;
-import com.example.todo.service.ToDoItem;
 import com.example.todo.service.User;
 import com.example.todo.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -120,9 +119,6 @@ class UserRestControllerTest {
                 "Bruce", "Wayne",
                 "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER"));
         User user = getPeterParker();
-        UUID todoItemIdentifier = UUID.randomUUID();
-        ToDoItem item = new ToDoItem(todoItemIdentifier, "mytodo",
-                "todo description", null, user);
         when(userService.create(any()))
                 .thenReturn(new User(
                         UUID.fromString(DataInitializer.WAYNE_ID),
@@ -131,7 +127,7 @@ class UserRestControllerTest {
         this.mvc.perform(
                         post("/api/users")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(item))
+                                .content(objectMapper.writeValueAsString(createUser))
                                 .with(user(user)).with(csrf()))
                 .andDo(print())
                 .andExpect(status().isCreated())
@@ -142,15 +138,15 @@ class UserRestControllerTest {
     }
 
     @Test
-    void createToDoItemUnauthorized() throws Exception {
-        User user = getBruceWayne();
-        UUID todoItemIdentifier = UUID.randomUUID();
-        ToDoItem item = new ToDoItem(todoItemIdentifier, "mytodo",
-                "todo description", null, user);
+    void createUserUnauthorized() throws Exception {
+        CreateUser createUser = new CreateUser(
+                UUID.fromString(DataInitializer.WAYNE_ID),
+                "Bruce", "Wayne",
+                "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER"));
         this.mvc.perform(
-                        post("/api/todos")
+                        post("/api/users")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(item))
+                                .content(objectMapper.writeValueAsString(createUser))
                                 .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isUnauthorized());

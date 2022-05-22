@@ -10,8 +10,8 @@ import java.util.UUID;
 
 public interface ToDoItemEntityRepository extends JpaRepository<ToDoItemEntity, Long> {
 
-    @Query("select ti from ToDoItemEntity ti where ti.userEntity.identifier = :userEntityIdentifier")
-    List<ToDoItemEntity> findAllByUserEntityIdentifier(@Param("userEntityIdentifier") UUID userEntityIdentifier);
+    @Query("select ti from ToDoItemEntity ti where ti.userIdentifier = :userEntityIdentifier")
+    List<ToDoItemEntity> findAllByUserIdentifier(@Param("userEntityIdentifier") UUID userEntityIdentifier);
 
-    Optional<ToDoItemEntity> findOneByIdentifierAndUserEntityIdentifier(UUID toDoItemIdentifier, UUID identifier);
+    Optional<ToDoItemEntity> findOneByIdentifierAndUserIdentifier(UUID toDoItemIdentifier, UUID identifier);
 }

@@ -4,14 +4,10 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.ManyToOne;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.UUID;
-
-import static javax.persistence.CascadeType.ALL;
-import static javax.persistence.FetchType.EAGER;
 
 @Entity
 public class ToDoItemEntity extends AbstractPersistable<Long> {
@@ -30,18 +26,18 @@ public class ToDoItemEntity extends AbstractPersistable<Long> {
     private LocalDate dueDate;
 
     @NotNull
-    @ManyToOne(fetch = EAGER, cascade = ALL)
-    private UserEntity userEntity;
+    @Column(length=16)
+    private UUID userIdentifier;
 
     public ToDoItemEntity() {
     }
 
-    public ToDoItemEntity(UUID identifier, String title, String description, LocalDate dueDate, UserEntity userEntity) {
+    public ToDoItemEntity(UUID identifier, String title, String description, LocalDate dueDate, UUID userIdentifier) {
         this.identifier = identifier;
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
-        this.userEntity = userEntity;
+        this.userIdentifier = userIdentifier;
     }
 
     public UUID getIdentifier() {
@@ -60,8 +56,8 @@ public class ToDoItemEntity extends AbstractPersistable<Long> {
         return dueDate;
     }
 
-    public UserEntity getUserEntity() {
-        return userEntity;
+    public UUID getUserIdentifier() {
+        return userIdentifier;
     }
 
     @Override
@@ -71,7 +67,7 @@ public class ToDoItemEntity extends AbstractPersistable<Long> {
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", dueDate=" + dueDate +
-                ", userEntity=" + userEntity +
+                ", userIdentifier=" + userIdentifier +
                 "} " + super.toString();
     }
 }

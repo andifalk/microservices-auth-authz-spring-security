@@ -27,13 +27,17 @@ public class ToDoRestController {
 
     private final ToDoService toDoService;
 
+    public ToDoRestController(ToDoService toDoService) {
+        this.toDoService = toDoService;
+    }
+
     @Operation(tags = "todo", summary = "ToDo API", description = "Finds all ToDo items for given user identifier", parameters = @Parameter(name = "user", example = DataInitializer.WAYNE_ID))
     @GetMapping
     public List<ToDoItem> findAllForUser(@RequestParam(name = "user") UUID userIdentifier, @AuthenticationPrincipal User authenticatedUser) {
         if (authenticatedUser.isAdmin()) {
             return toDoService.findAll();
         } else {
-            return toDoService.findAllForUser(userIdentifier, authenticatedUser);
+            return toDoService.findAllForUser(userIdentifier, authenticatedUser.getIdentifier());
         }
     }
 
@@ -42,18 +46,15 @@ public class ToDoRestController {
     public ResponseEntity<ToDoItem> findOneForUser(
             @PathVariable("todoItemIdentifier") UUID todoItemIdentifier,
             @AuthenticationPrincipal User authenticatedUser) {
-        return toDoService.findToDoItemForUser(todoItemIdentifier, authenticatedUser)
+        return toDoService.findToDoItemForUser(todoItemIdentifier, authenticatedUser.getIdentifier())
                 .map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     @Operation(tags = "todo", summary = "ToDo API", description = "Creates a new ToDo item for current user")
     @PostMapping
     public ToDoItem create(@RequestBody @Valid ToDoItem toDoItem, @AuthenticationPrincipal User authenticatedUser) {
-        toDoItem.setUser(authenticatedUser);
+        toDoItem.setUserIdentifier(authenticatedUser.getIdentifier());
         return toDoService.create(toDoItem);
     }
 
-    public ToDoRestController(ToDoService toDoService) {
-        this.toDoService = toDoService;
-    }
 }

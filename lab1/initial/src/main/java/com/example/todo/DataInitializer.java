@@ -66,21 +66,21 @@ public class DataInitializer implements ApplicationRunner {
 
         List<ToDoItemEntity> todosForWayne = userEntityRepository.findOneByUsername("bwayne").map(u -> Stream.of(
                 new ToDoItemEntity(WANE_TODO_1, "Shopping", "Doing weekend shopping",
-                        LocalDate.now().plusDays(2), u),
-                new ToDoItemEntity(WANE_TODO_2, "Reading book", "Read the new book", null, u),
+                        LocalDate.now().plusDays(2), UUID.fromString(WAYNE_ID)),
+                new ToDoItemEntity(WANE_TODO_2, "Reading book", "Read the new book", null, UUID.fromString(WAYNE_ID)),
                 new ToDoItemEntity(WANE_TODO_3, "Call mom", "Call my mom",
-                        LocalDate.now().plusDays(5), u)
+                        LocalDate.now().plusDays(5), UUID.fromString(WAYNE_ID))
         ).map(toDoItemEntityRepository::save).collect(Collectors.toList())).orElse(List.of());
 
         LOG.info("Created {} todos for user bwayne", todosForWayne.size());
 
         List<ToDoItemEntity> todosForKent = userEntityRepository.findOneByUsername("ckent").map(u -> Stream.of(
                 new ToDoItemEntity(KENT_TODO_1, "Contact customer", "Make phone call with my customer",
-                        LocalDate.now().plusDays(5), u),
+                        LocalDate.now().plusDays(5), UUID.fromString(KENT_ID)),
                 new ToDoItemEntity(KENT_TODO_2, "Plan holiday", "Plan my next long vacation",
-                        LocalDate.now().plusMonths(1), u),
+                        LocalDate.now().plusMonths(1), UUID.fromString(KENT_ID)),
                 new ToDoItemEntity(KENT_TODO_3, "Clean up", "Clean up my apartment",
-                        LocalDate.now().plusDays(5), u)
+                        LocalDate.now().plusDays(5), UUID.fromString(KENT_ID))
         ).map(toDoItemEntityRepository::save).collect(Collectors.toList())).orElse(List.of());
 
         LOG.info("Created {} todos for user ckent", todosForKent.size());

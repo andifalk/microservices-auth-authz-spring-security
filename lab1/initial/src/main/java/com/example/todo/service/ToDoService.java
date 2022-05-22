@@ -28,17 +28,17 @@ public class ToDoService {
                 .stream().map(ToDoItem::new).collect(Collectors.toList());
     }
 
-    public List<ToDoItem> findAllForUser(UUID userIdentifier, User authenticatedUser) {
-        if (!authenticatedUser.getIdentifier().equals(userIdentifier)) {
+    public List<ToDoItem> findAllForUser(UUID userIdentifier, UUID authenticatedUserIdentification) {
+        if (!authenticatedUserIdentification.equals(userIdentifier)) {
             throw new AccessDeniedException("Current user is not allowed to access todo items for given user id");
         }
-        return toDoItemEntityRepository.findAllByUserEntityIdentifier(userIdentifier)
+        return toDoItemEntityRepository.findAllByUserIdentifier(userIdentifier)
                 .stream().map(ToDoItem::new).collect(Collectors.toList());
     }
 
-    public Optional<ToDoItem> findToDoItemForUser(UUID toDoItemIdentifier, User authenticatedUser) {
-        return toDoItemEntityRepository.findOneByIdentifierAndUserEntityIdentifier(
-                toDoItemIdentifier, authenticatedUser.getIdentifier()).map(ToDoItem::new);
+    public Optional<ToDoItem> findToDoItemForUser(UUID toDoItemIdentifier, UUID authenticatedUserIdentification) {
+        return toDoItemEntityRepository.findOneByIdentifierAndUserIdentifier(
+                toDoItemIdentifier, authenticatedUserIdentification).map(ToDoItem::new);
     }
 
     @Transactional

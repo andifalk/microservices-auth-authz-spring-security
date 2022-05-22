@@ -49,7 +49,7 @@ class ToDoRestControllerTest {
         UUID todoItemIdentifier = UUID.randomUUID();
         when(toDoService.findAllForUser(any(), any()))
                 .thenReturn(List.of(new ToDoItem(todoItemIdentifier, "mytodo",
-                        "todo description", null, user)));
+                        "todo description", null, UUID.fromString(DataInitializer.WAYNE_ID))));
         this.mvc.perform(
                 get("/api/todos")
                         .param("user", DataInitializer.WAYNE_ID)
@@ -58,9 +58,8 @@ class ToDoRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().json(
                         "[{\"identifier\":\"" + todoItemIdentifier + "\",\"title\":\"mytodo\"," +
-                                "\"description\":\"todo description\",\"user\":{\"identifier\":\"" +
-                                user.getIdentifier() + "\",\"firstName\":\"Bruce\",\"lastName\":\"Wayne\"," +
-                                "\"username\":\"bwayne\", \"email\":\"bruce.wayne@example.com\"}}]"
+                                "\"description\":\"todo description\"," +
+                                "\"userIdentifier\":\"" + user.getIdentifier() + "\"}]"
                 ));
     }
 
@@ -82,7 +81,7 @@ class ToDoRestControllerTest {
         UUID todoItemIdentifier = UUID.randomUUID();
         when(toDoService.findToDoItemForUser(any(), any()))
                 .thenReturn(Optional.of(new ToDoItem(todoItemIdentifier, "mytodo",
-                        "todo description", null, user)));
+                        "todo description", null, UUID.fromString(DataInitializer.WAYNE_ID))));
         this.mvc.perform(
                         get("/api/todos/{todoidentifier}", todoItemIdentifier.toString())
                                 .with(user(user)))
@@ -90,9 +89,8 @@ class ToDoRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().json(
                         "{\"identifier\":\"" + todoItemIdentifier + "\",\"title\":\"mytodo\"," +
-                                "\"description\":\"todo description\",\"user\":{\"identifier\":\"" +
-                                user.getIdentifier() + "\",\"firstName\":\"Bruce\",\"lastName\":\"Wayne\"," +
-                                "\"username\":\"bwayne\", \"email\":\"bruce.wayne@example.com\"}}"
+                                "\"description\":\"todo description\"," +
+                                "\"userIdentifier\":\"" + user.getIdentifier() + "\"}"
                 ));
     }
 
@@ -112,10 +110,10 @@ class ToDoRestControllerTest {
                 "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER"));
         UUID todoItemIdentifier = UUID.randomUUID();
         ToDoItem item = new ToDoItem(todoItemIdentifier, "mytodo",
-                "todo description", null, user);
+                "todo description", null, UUID.fromString(DataInitializer.WAYNE_ID));
         when(toDoService.create(any()))
                 .thenReturn(new ToDoItem(todoItemIdentifier, "mytodo",
-                        "todo description", null, user));
+                        "todo description", null, UUID.fromString(DataInitializer.WAYNE_ID)));
         this.mvc.perform(
                         post("/api/todos")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -125,9 +123,8 @@ class ToDoRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().json(
                         "{\"identifier\":\"" + todoItemIdentifier + "\",\"title\":\"mytodo\"," +
-                                "\"description\":\"todo description\",\"user\":{\"identifier\":\"" +
-                                user.getIdentifier() + "\",\"firstName\":\"Bruce\",\"lastName\":\"Wayne\"," +
-                                "\"username\":\"bwayne\", \"email\":\"bruce.wayne@example.com\"}}"
+                                "\"description\":\"todo description\"," +
+                                "\"userIdentifier\":\"" + user.getIdentifier() + "\"}"
                 ));
     }
 
@@ -139,7 +136,7 @@ class ToDoRestControllerTest {
                 "bwayne", "bruce.wayne@example.com", "wayne", Set.of("USER"));
         UUID todoItemIdentifier = UUID.randomUUID();
         ToDoItem item = new ToDoItem(todoItemIdentifier, "mytodo",
-                "todo description", null, user);
+                "todo description", null, UUID.fromString(DataInitializer.WAYNE_ID));
         this.mvc.perform(
                         post("/api/todos")
                                 .contentType(MediaType.APPLICATION_JSON)

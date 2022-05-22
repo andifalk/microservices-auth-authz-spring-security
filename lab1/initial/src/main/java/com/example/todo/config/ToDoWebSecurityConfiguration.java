@@ -74,13 +74,14 @@ public class ToDoWebSecurityConfiguration {
     @Bean
     @Order(4)
     public SecurityFilterChain api(HttpSecurity http) throws Exception {
-        http.mvcMatcher("/api/*")
+        http.mvcMatcher("/api/**")
                 .authorizeRequests()
-                .mvcMatchers("/api/users").hasRole("ADMIN")
+                .mvcMatchers("/api/users/me").hasAnyRole("USER", "ADMIN")
+                .mvcMatchers("/api/users/**").hasRole("ADMIN")
                 .anyRequest().hasAnyRole("USER", "ADMIN")
                 .and()
                 // only disable CSRF for demo purposes or when NOT using session cookies for auth
-                .csrf().disable()
+                //.csrf().disable()
                 .httpBasic(withDefaults()).formLogin(withDefaults());
         return http.build();
     }
