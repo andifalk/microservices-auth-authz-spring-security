@@ -13,7 +13,7 @@ public class ToDoItemResource {
 
   private LocalDate dueDate;
 
-  private User ownedBy;
+  private UUID userIdentifier;
 
   @SuppressWarnings("unused")
   public ToDoItemResource() {}
@@ -50,11 +50,21 @@ public class ToDoItemResource {
     this.dueDate = dueDate;
   }
 
-  public User getOwnedBy() {
-    return ownedBy;
+  public UUID getUserIdentifier() {
+    return userIdentifier;
+  }
+  public void setUserIdentifier(UUID userIdentifier) {
+    this.userIdentifier = userIdentifier;
   }
 
-  public void setOwnedBy(User ownedBy) {
-    this.ownedBy = ownedBy;
+  @Override
+  public String toString() {
+    return "ToDoItemResource{" +
+            "identifier=" + identifier +
+            ", title='" + title + '\'' +
+            ", description='" + description + '\'' +
+            ", dueDate=" + dueDate +
+            ", userIdentifier=" + userIdentifier +
+            '}';
   }
 }
