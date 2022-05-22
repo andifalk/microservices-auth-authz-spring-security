@@ -22,7 +22,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/todos")
 @Validated
-@OpenAPIDefinition(tags = @Tag(name = "todo"), info = @Info(title = "ToDo", description = "API for ToDo Items", version = "1"), security = {@SecurityRequirement(name = "basicAuth"), @SecurityRequirement(name = "bearer")})
+@OpenAPIDefinition(tags = @Tag(name = "todo"), info = @Info(title = "ToDo", description = "API for ToDo Items", version = "1"), security = {@SecurityRequirement(name = "bearer")})
 public class ToDoRestController {
 
     private final ToDoService toDoService;

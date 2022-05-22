@@ -23,7 +23,7 @@ import static org.springframework.http.HttpStatus.CREATED;
 @RestController
 @RequestMapping("/api/users")
 @Validated
-@OpenAPIDefinition(tags = @Tag(name = "user"), info = @Info(title = "User", description = "API for Users", version = "1"), security = {@SecurityRequirement(name = "basicAuth"), @SecurityRequirement(name = "bearer")})
+@OpenAPIDefinition(tags = @Tag(name = "user"), info = @Info(title = "User", description = "API for Users", version = "1"), security = {@SecurityRequirement(name = "bearer")})
 public class UserRestController {
 
     private final UserService userService;
