@@ -1,4 +1,4 @@
-# OAuth 2.0 & OpenID Connect Workshop
+# Microservices Authentication & Authorization With Spring Security [Workshop]
 
 ## Introduction
 
