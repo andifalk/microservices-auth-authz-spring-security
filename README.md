@@ -6,7 +6,7 @@ This contains both, theory parts on all important concepts, and hands-on practic
 
 __Table of Contents__
 
-* [Workshop Tutorial](https://andifalk.gitbook.io/openid-connect-workshop)
+* [Workshop Tutorial](https://andifalk.gitbook.io/microservices-authentication-and-authorization)
 * [Requirements and Setup](setup)
 * [Hands-On Workshop](#hands-on-workshop)
     * [Intro Labs](#intro-labs)
@@ -20,7 +20,7 @@ __Table of Contents__
 
 ## Workshop Tutorial
 
-To follow the hands-on workshop please open the [workshop tutorial](https://andifalk.gitbook.io/openid-connect-workshop).
+To follow the hands-on workshop please open the [workshop tutorial](https://andifalk.gitbook.io/microservices-authentication-and-authorization/).
 
 ## Requirements and Setup
 
