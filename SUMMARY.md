@@ -1,9 +1,11 @@
-# Microservices Authentication & Authorization With Spring Security [Workshop]
+# Table of contents
+
+* [README](README.md)
 
 ## Introduction
 
-* [Requirements and Setup](setup/README.md)  
-* [Sample Application Architecture](application-architecture/README.md)  
+* [Requirements and Setup](setup/README.md)
+* [Sample Application Architecture](application-architecture/README.md)
 
 ## Intro Labs
 
@@ -15,4 +17,3 @@
 * [Lab 1: Resource Server](lab1/README.md)
 * [Lab 2: Testing the Resource Server](lab2/README.md)
 * [Lab 3: Call another Microservice](lab3/README.md)
-
