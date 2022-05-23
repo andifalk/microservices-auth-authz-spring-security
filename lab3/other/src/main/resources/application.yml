@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: SuggestToDoApp
+  jackson:
+    default-property-inclusion: non_null
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9000/oauth2/jwks
+
+logging:
+  level:
+    root: info
+    org:
+      springframework:
+        security: debug
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  health:
+    readinessstate:
+      enabled: on
+    livenessstate:
+      enabled: on
+server:
+  port: 9091
+  error:
+    include-stacktrace: never

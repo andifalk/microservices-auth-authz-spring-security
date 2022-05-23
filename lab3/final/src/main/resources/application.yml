@@ -1,0 +1,44 @@
+
+spring:
+  application:
+    name: ToDoApp
+  datasource:
+    embedded-database-connection: h2
+    hikari:
+      jdbc-url: jdbc:h2:mem:todo
+  jpa:
+    open-in-view: false
+    generate-ddl: on
+    hibernate:
+      ddl-auto: create-drop
+  jackson:
+    default-property-inclusion: non_null
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9000/oauth2/jwks
+          issuer-uri: http://localhost:9000
+
+logging:
+  level:
+    root: info
+    org:
+      springframework:
+        security: debug
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  health:
+    readinessstate:
+      enabled: on
+    livenessstate:
+      enabled: on
+server:
+  port: 9090
+  error:
+    include-stacktrace: never
+suggest:
+  uri: http://localhost:9091
