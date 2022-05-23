@@ -1,4 +1,5 @@
 [![License](https://img.shields.io/badge/License-Apache%20License%202.0-brightgreen.svg)][1]
+![Java CI with Gradle](https://github.com/andifalk/microservices-auth-authz-spring-security/workflows/Java%20CI%20with%20Gradle/badge.svg)
 # Microservices Authentication & Authorization With Spring Security [Workshop]
 
 This contains both, theory parts on all important concepts, and hands-on practice labs.
