@@ -71,7 +71,7 @@ To set up and run this project:
 2. Import this project into your IDE as a gradle project
 3. After the IDE has configured the project you can start the authorization server by running the main class _com.example.spring.authorizationserver.SpringAuthorizationServerApplication_
 
-### Open Keycloak Admin UI
+### Check Running Server
 
 The spring authorization server does not have a UI. Instead, to prove it is running just open the web browser and navigate to http://localhost:9000/.well-known/openid-configuration.
 
