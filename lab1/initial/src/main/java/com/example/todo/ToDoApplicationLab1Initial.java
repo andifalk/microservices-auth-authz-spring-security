@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.security.SecuritySchemes;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import static io.swagger.v3.oas.annotations.enums.SecuritySchemeType.*;
+import static io.swagger.v3.oas.annotations.enums.SecuritySchemeType.HTTP;
 
 @SecuritySchemes({
         @SecurityScheme(

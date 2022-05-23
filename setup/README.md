@@ -40,7 +40,7 @@ To be able to work properly in Visual Studio Code with this Spring Boot Java Gra
 
 ## Get the source code
                        
-Clone this GitHub repository (https://github.com/andifalk/microservices-auth-authz-spring-security):
+Clone this GitHub repository [https://github.com/andifalk/microservices-auth-authz-spring-security](https://github.com/andifalk/microservices-auth-authz-spring-security):
 
 ```
 git clone https://github.com/andifalk/microservices-auth-authz-spring-security.git workshop
@@ -58,23 +58,22 @@ All spring boot based java projects can either be run using your Java IDE or usi
 with changing into the corresponding project directory and issuing a `./gradlew bootRun` command.
 
 In this workshop we will use a customized version of [Spring Authorization Server](https://github.com/spring-projects/spring-authorization-server) as local identity provider.  
-[Spring Authorization Server](https://github.com/spring-projects/spring-authorization-server)  
-implements OAuth 2.0 and OpenID Connect 1.0.
+[Spring Authorization Server](https://github.com/spring-projects/spring-authorization-server) implements OAuth 2.0 and OpenID Connect 1.0.
 
 ## Setup Spring Authorization Server
 
-You need a compliant OAuth 2.0 / OpenID Connect provider for this workshop.
-Here we will use [Custom  Spring Authorization Server](https://github.com/andifalk/custom-spring-authorization-server).
+You need a compliant OAuth 2.0 / OpenID Connect 1.0 provider for this workshop.
+Here we will use [Customized Version of Spring Authorization Server](https://github.com/andifalk/custom-spring-authorization-server).
 
 To set up and run this project:
 
-1. Clone or download the github repository at: https://github.com/andifalk/custom-spring-authorization-server
+1. Clone or download the GitHub repository at: [https://github.com/andifalk/custom-spring-authorization-server](https://github.com/andifalk/custom-spring-authorization-server)
 2. Import this project into your IDE as a gradle project
 3. After the IDE has configured the project you can start the authorization server by running the main class _com.example.spring.authorizationserver.SpringAuthorizationServerApplication_
 
 ### Open Keycloak Admin UI
 
-The spring authorization server does not have a UI. Instead to prove it is running just open the web browser and navigate to http://localhost:9000/.well-known/openid-configuration.
+The spring authorization server does not have a UI. Instead, to prove it is running just open the web browser and navigate to http://localhost:9000/.well-known/openid-configuration.
 
 Now, if you see the openid configuration in the browser (how nice it is shown depends on your browser addons) then spring authorization server is ready to use it for this workshop.
 
@@ -83,5 +82,5 @@ Now, if you see the openid configuration in the browser (how nice it is shown de
 ### Further Information
 
 If you want to know more about setting up a spring authorization server for your own projects 
-then please consult the [spring authorization server github project](https://github.com/spring-projects/spring-authorization-server).
+then please consult the [spring authorization server GitHub project](https://github.com/spring-projects/spring-authorization-server).
 Please note that currently there is not really much documentation there, but currently the community is adding more docs.

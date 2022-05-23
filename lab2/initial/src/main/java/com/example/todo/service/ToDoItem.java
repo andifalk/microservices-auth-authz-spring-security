@@ -2,7 +2,6 @@ package com.example.todo.service;
 
 import com.example.todo.entity.ToDoItemEntity;
 
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.io.Serializable;
 import java.time.LocalDate;

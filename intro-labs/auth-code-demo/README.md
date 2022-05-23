@@ -24,7 +24,7 @@ To see all details for this grant flow see the corresponding section of the
 [OAuth 2.0 Authorization Framework Spec](https://tools.ietf.org/html/rfc6749#section-4.1).
 
 1. The flow starts with the authorization request, this redirects to the authorization server.
-   Here the user logs in using his credentials and approves a consent page
+   Here the user logs in using his credentials (and optionally approves a consent page)
 2. After successfully logging in a 302 HTTP redirect request with the authorization code is being sent through to the browser which redirects
    to the callback entry point provided by the client application 
 3. Now the client application send a token request to the authorization server to exchange
@@ -41,7 +41,7 @@ token is still valid and get a new access token by using the refresh token.
                 
 To start the demo:
 
-* Make sure _Keycloak_ is running correctly
+* Make sure _Custom Spring Authorization Server_ is running correctly
 * Browse to [localhost:9095/client](http://localhost:9095/client) to start the demo client                  
 
 __Important:__ You can use one of the following users to login:
@@ -66,7 +66,7 @@ A maximum authorization code lifetime of 10 minutes is RECOMMENDED.
 The client MUST NOT use the authorization code more than once. 
 </blockquote>
 
-Keycloak uses a really short authorization code lifetime of 2 minutes by default.
+The spring authorization server follows this recommendation and uses a really short authorization code lifetime.
 
 
 
