@@ -25,8 +25,8 @@ In this lab we will build an OAuth2/OIDC compliant resource server.
 
 ![Resource Server](images/resource_server.png)
 
-We will use [Keycloak](https://keycloak.org) as identity provider.  
-Please again make sure you have set up keycloak as described in [Setup Keycloak](../setup/README.md)
+We will use Spring Authorization Server as identity provider.  
+Please again make sure you have set up Spring Authorization Server as described in [setup](../setup/README.md)
 
 In lab 1 you will learn how to:
 
@@ -171,12 +171,12 @@ click the refresh toolbar button in the gradle tool window).
 
 Spring security 5 uses the
 [OpenID Connect Discovery](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig) specification
-to completely configure the resource server to use our keycloak instance.
+to completely configure the resource server to use our Spring Authorization Server instance.
 
-__Make sure keycloak has been started as described in the [setup section](../setup/README.md).__
+__Make sure Spring Authorization Server has been started as described in the [setup](../setup/README.md) section.__
 
 Navigate your web browser to the url [localhost:8080/auth/realms/workshop/.well-known/openid-configuration](http://localhost:8080/auth/realms/workshop/.well-known/openid-configuration).  
-Then you should see the public discovery information that keycloak provides
+Then you should see the public discovery information that Spring Authorization Server provides
 (like the following, which only shows partial information).
 
 ```json
@@ -190,7 +190,7 @@ Then you should see the public discovery information that keycloak provides
 ```
 
 For configuring a resource server the important entries are _issuer_ and _jwk-set_uri_.
-For a resource server only the correct validation of a JWT token is important, so it only needs to know where to load
+For a resource server only the correct validation of a JWT token is significant, so it only needs to know where to load
 the public key from to validate the token signature.
 
 Spring Security 5 automatically configures a resource server by specifying the _jwk-set_ uri value
@@ -223,9 +223,9 @@ Spring Security then validates by default:
 * the _issuer_ claim of the JWT
 * that the JWT is not expired
 
-Usually this configuration would be sufficient to configure a resource server (by auto-configuring all settings using spring boot).
+Usually this configuration would be sufficient to configure a resource server (by autoconfiguring all settings using spring boot).
 As there is already a security configuration for basic authentication in place (_com.example.library.server.config.WebSecurityConfiguration_),
-this disables the spring boot auto configuration. Starting with Spring Boot 2 you always have to configure Spring Security
+this disables the spring boot autoconfiguration. Starting with Spring Boot 2 you always have to configure Spring Security
 yourself as soon as you introduce a class which extends _WebSecurityConfigurerAdapter_.
 
 So we have to change the existing security configuration to enable token based authentication instead of basic authentication.
@@ -351,7 +351,7 @@ So what is needed here is a JSON Web Token (JWT).
 First we need to get such token, and then we can try to call this API again.
 
 To do this we will use the _resource owner password grant_ to directly obtain an access token
-from keycloak by specifying our credentials as part of the request.
+from Spring Authorization Server by specifying our credentials as part of the request.
 
 __You may argue now: "This is just like doing basic authentication??"__
 
@@ -824,7 +824,7 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 }
 ```  
 
-As the _JwtValidators_ creator depends on the full issuer URI pointing to the OpendID Connect configuration of Keycloak
+As the _JwtValidators_ creator depends on the full issuer URI pointing to the OpendID Connect configuration of Spring Authorization Server
 we need to add the _issuer-uri_ in addition to _jwk-set-uri_ . So basically this now should look like this in the
 _application.yaml_ file:
 

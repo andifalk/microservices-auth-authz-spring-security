@@ -57,7 +57,6 @@ The packages of the application are organized according to the different applica
 
 In addition, there more packages with supporting functions:
 
-* __common__: Classes that are reused in multiple other packages
 * __config__: All spring configuration classes
 * __security__: All security relevant classes, e.g. a _UserDetailsService_ implementation
 
@@ -65,7 +64,7 @@ In addition, there more packages with supporting functions:
 
 To call the provided REST API you can use curl, postman or httpie. 
 For details on how to call the REST API please consult the [REST API documentation](http://localhost:9090/swagger-ui.html) 
-which also provides sample requests for curl and httpie.
+which also provides the possibility to execute requests for the API endpoints.
 
 ### Server Users and roles
 
@@ -84,33 +83,32 @@ __Important:__ We will use the following users in all subsequent labs from now o
 
 These users are configured for basic authentication and also later for authenticating using keycloak.
 
-### Provided Server application
+### Provided Server applications
+
+#### ToDo Server application
 
 You can find the provided initial server application beneath the [lab 1 folder](../lab1) as 
 [initial](../lab1/initial).
 
+#### Suggest ToDo Server application
+
+You can find the provided Suggest ToDo items server application beneath the [lab 3 folder](../lab3) as
+[initial](../lab3/other).
+
+This application is used as target server to propagate an access token to when calling from the ToDo item server application.
+
 ## Client Architecture
 
-The client is able to fulfill most of the provided uses cases by the server application like:
-
-* View all available todo items in a list
-* Borrow available todo items
-* Return my borrowed todo items
-* Create new todo items
-
-All action buttons are visible depending on user authorizations, e.g. only users with _LIBRARY_USER_ role can see
-the _Borrow_ and _Return_ buttons. The _Return_
-
-![Library Client](../docs/images/library_client.png)
+The client is just able to perform the login using the spring authorization server and to make a test call to get and display the list of all ToDo items for the currently authenticated user. This way you can test the correct communication between client and server without any other tool like postman.
 
 ### Client Layers
 
-The domain model of the client application is quite simple and just consists of _ToDoItem_ and _User_ models.   
+The domain model of the client application is quite simple and just consists of _ToDoItemResource_ and _User_ models.   
 The packages of the application are organized according to the different application layers:
 
 * __web__: Contains the complete spring web mvc layer with all required client side resources
 
-In addition there is one more package with supporting functions:
+In addition, there is one more package with supporting functions:
 
 * __config__: All spring configuration classes
 
@@ -123,7 +121,7 @@ in _resources/static_ folder.
 There are two target user roles for this client-/server application:
 
 * USER: Standard user who can list and add todo items
-* ADMIN: An administrator user who can list, add or remove users and can see all todo items of all users
+* ADMIN: An administrator user who can list, add or remove users and can see all todo items (of all users)
 
 | Username | Email                    | Password | Role   |
 | ---------| ------------------------ | -------- |--------|
