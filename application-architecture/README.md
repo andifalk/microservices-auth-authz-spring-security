@@ -93,7 +93,7 @@ You can find the provided initial server application beneath the [lab 1 folder](
 #### Suggest ToDo Server application
 
 You can find the provided Suggest ToDo items server application beneath the [lab 3 folder](../lab3) as
-[initial](../lab3/other).
+[other](../lab3/other).
 
 This application is used as target server to propagate an access token to when calling from the ToDo item server application.
 

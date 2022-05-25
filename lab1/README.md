@@ -38,8 +38,10 @@ In lab 1 you will learn how to:
 
 In the lab 1 folder you find 2 applications:
 
-* __library-server-initial__: This is the application we will use as starting point for this lab
-* __library-server-complete__: This application is the completed reference for this lab
+* __initial__: This is the application we will use as starting point for this lab
+* __final-automatic__:  This is the completed application for this lab using automatic standard authorization mapping of scopes to JWT principal 
+* __final-jwt__: This is the completed application for this lab using custom authorization mapping with JWT principal
+* __final-user__: This is the completed application for this lab using full custom user mapping with _User_ class as principal
 
 ## Start the Lab
 
@@ -47,50 +49,46 @@ Now, let's start with this lab.
 
 ### Explore the initial application
 
-Please navigate your Java IDE to the __lab1/library-server-initial__ project and at first explore this project a bit.  
-Then start the application by running the class _com.example.library.server.Lab1InitialLibraryServerApplication_ inside your IDE
+Please navigate your Java IDE to the __lab1/initial__ project and at first explore this project a bit.  
+Then start the application by running the class _com.example.todo.ToDoApplicationLab1Initial_ inside your IDE
 or by issuing a `gradlew bootRun` command.
 
 As already described in the [application architecture](../application-architecture) section the initial application
 is secured using basic authentication.
 
-There are three target user roles for this application:
+There are two target user roles for this application:
 
-* LIBRARY_USER: Standard library user who can list, borrow and return his currently borrowed books
-* LIBRARY_CURATOR: A curator user who can add, edit or delete books
-* LIBRARY_ADMIN: An administrator user who can list, add or remove users
+* USER: Standard user who can list and add todo items
+* ADMIN: An administrator user who can list, add or remove users and can see all todo items (of all users)
 
-__Important:__ To log into the application using basic authentication you have to use the _email_ as username.
-
-| Username | Email                    | Password | Role            |
-| ---------| ------------------------ | -------- | --------------- |
-| bwayne   | bruce.wayne@example.com  | wayne    | LIBRARY_USER    |
-| bbanner  | bruce.banner@example.com | banner   | LIBRARY_USER    |
-| pparker  | peter.parker@example.com | parker   | LIBRARY_CURATOR |
-| ckent    | clark.kent@example.com   | kent     | LIBRARY_ADMIN   |
+| Username | Email                    | Password | Role   |
+| ---------| ------------------------ | -------- |--------|
+| bwayne   | bruce.wayne@example.com  | wayne    | USER   |
+| ckent    | clark.kent@example.com   | kent     | USER   |
+| pparker  | peter.parker@example.com | parker   | ADMIN  |
 
 To test if the application works as expected, either
 
-* open a web browser and navigate to [localhost:9091/library-server/books](http://localhost:9091/library-server/books)
-  and use 'bruce.wayne@example.com' and 'wayne' as login credentials
+* open a web browser and navigate to [localhost:9090/api/todos](http://localhost:9090/api/todos)
+  and use _bwayne_ and _wayne_ as login credentials
 * or use a command line like curl or httpie or postman (if you like a UI)
 
 Httpie:
 ```shell
-http localhost:9091/library-server/books --auth 'bruce.wayne@example.com:wayne'
+http localhost:9090/api/todos user==c52bf7db-db55-4f89-ac53-82b40e8c57c2 --auth 'bwayne:wayne'
 ``` 
 
 Curl:
 ```shell
-curl http://localhost:9091/library-server/books -u bruce.wayne@example.com:wayne
+curl "http://localhost:9090/api/todos?user=c52bf7db-db55-4f89-ac53-82b40e8c57c2" -u bwayne:wayne
 ```
 
-If this succeeds you should see a list of books in JSON format.
+If this succeeds you should see a list of ToDo items in JSON format.
 
 Try the same request without specifying any user:
 
 ```shell
-http localhost:9091/library-server/books
+http localhost:9090/api/todos
 ``` 
 
 Then you should see the following response:
@@ -98,15 +96,9 @@ Then you should see the following response:
 ```http
 HTTP/1.1 401 
 Cache-Control: no-cache, no-store, max-age=0, must-revalidate
-Content-Type: application/json;charset=UTF-8
+Connection: keep-alive
+...
 WWW-Authenticate: Basic realm="Realm"
-{
-    "error": "Unauthorized",
-    "message": "Unauthorized",
-    "path": "/library-server/books",
-    "status": 401,
-    "timestamp": "2019-05-09T17:26:17.571+0000"
-}
 ``` 
 
 Also, try to request the list of users with same user credentials of 'bruce.wayne@example.com / wayne'.
@@ -114,30 +106,30 @@ Also, try to request the list of users with same user credentials of 'bruce.wayn
 Httpie:
 
 ```shell
-http localhost:9091/library-server/users --auth 'bruce.wayne@example.com:wayne'
+http localhost:9090/api/users --auth 'bwayne:wayne'
 ``` 
 
 Curl:
 
 ```shell
-curl -i http://localhost:9091/library-server/users -u bruce.wayne@example.com:wayne
+curl -i http://localhost:9090/api/users -u bwayne:wayne
 ```
 
 __Question:__ What response would you expect here?
 
 To answer this question have a look again at the user roles and what are the permissions associated with these roles.
-You might try again to get the list of users this way (with Clark Kent):
+You might try again to get the list of users this way (with Peter Parker):
 
 Httpie:
 
 ```shell
-http localhost:9091/library-server/users --auth 'clark.kent@example.com:kent'
+http localhost:9090/api/users --auth 'pparker:parker'
 ``` 
 
 Curl:
 
 ```shell
-curl http://localhost:9091/library-server/users -u clark.kent@example.com:kent
+curl http://localhost:9090/api/users -u pparker:parker
 ``` 
 
 This time it should work, and you should see the list of users.
@@ -163,7 +155,7 @@ and add this dependency instead:
 implementation('org.springframework.boot:spring-boot-starter-oauth2-resource-server')
 ```
 
-Note: If you still get compilation errors after replacing dependencies please trigger a gradle update
+__Note__: If you still get compilation errors after replacing dependencies please trigger a gradle update
 (check how this is done in your IDE, e.g. in Eclipse there is an option in project context menu, in IntelliJ
 click the refresh toolbar button in the gradle tool window).
 
@@ -175,43 +167,78 @@ to completely configure the resource server to use our Spring Authorization Serv
 
 __Make sure Spring Authorization Server has been started as described in the [setup](../setup/README.md) section.__
 
-Navigate your web browser to the url [localhost:8080/auth/realms/workshop/.well-known/openid-configuration](http://localhost:8080/auth/realms/workshop/.well-known/openid-configuration).  
+Navigate your web browser to the url [localhost:9000/.well-known/openid-configuration](http://localhost:9000/.well-known/openid-configuration).  
 Then you should see the public discovery information that Spring Authorization Server provides
-(like the following, which only shows partial information).
+(like the following).
 
 ```json
 {
-  "issuer": "http://localhost:8080/auth/realms/workshop",
-  "authorization_endpoint": "http://localhost:8080/auth/realms/workshop/protocol/openid-connect/auth",
-  "token_endpoint": "http://localhost:8080/auth/realms/workshop/protocol/openid-connect/token",
-  "userinfo_endpoint": "http://localhost:8080/auth/realms/workshop/protocol/openid-connect/userinfo",
-  "jwks_uri": "http://localhost:8080/auth/realms/workshop/protocol/openid-connect/certs"
-}  
+  "authorization_endpoint": "http://localhost:9000/oauth2/authorize",
+  "grant_types_supported": [
+    "authorization_code",
+    "client_credentials",
+    "refresh_token"
+  ],
+  "id_token_signing_alg_values_supported": [
+    "RS256"
+  ],
+  "issuer": "http://localhost:9000",
+  "jwks_uri": "http://localhost:9000/oauth2/jwks",
+  "response_types_supported": [
+    "code"
+  ],
+  "scopes_supported": [
+    "openid"
+  ],
+  "subject_types_supported": [
+    "public"
+  ],
+  "token_endpoint": "http://localhost:9000/oauth2/token",
+  "token_endpoint_auth_methods_supported": [
+    "client_secret_basic",
+    "client_secret_post",
+    "client_secret_jwt",
+    "private_key_jwt"
+  ],
+  "userinfo_endpoint": "http://localhost:9000/userinfo"
+} 
 ```
 
-For configuring a resource server the important entries are _issuer_ and _jwk-set_uri_.
+For configuring a resource server the important entries are _issuer-uri_ and _jwk-set-uri_.
 For a resource server only the correct validation of a JWT token is significant, so it only needs to know where to load
 the public key from to validate the token signature.
+
+If you specify the _spring.security.oauth2.resourceserver.jwt.issuer-uri_ instead then when starting the server application 
+it reads the _jwk-set-uri_ from the provided openid configuration. If you do not want to check this on application start just use the _jwk-set-uri_ property.
 
 Spring Security 5 automatically configures a resource server by specifying the _jwk-set_ uri value
 as part of the predefined spring property _spring.security.oauth2.resourceserver.jwt.set-uri_
 
-To perform this step, open _application.yml__ and add the jwk set uri property.
+To perform this step, open _application.yml__ and add the jwk set uri property to the end of the _spring_ entry.
 After adding this it should look like this:
 
 ```yaml
 spring:
+  application:
+    name: ToDoApp
+  datasource:
+    embedded-database-connection: h2
+    hikari:
+      jdbc-url: jdbc:h2:mem:todo
   jpa:
     open-in-view: false
+    generate-ddl: on
+    hibernate:
+      ddl-auto: create-drop
   jackson:
-    date-format: com.fasterxml.jackson.databind.util.StdDateFormat
     default-property-inclusion: non_null
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8080/auth/realms/workshop/protocol/openid-connect/certs
+          jwk-set-uri: http://localhost:9000/oauth2/jwks
 ```
+
 **Hint: An error you get very often with files in yaml format is that the indents are not correct.
 This can lead to unexpected errors later when you try to run all this stuff.**
 
@@ -232,94 +259,80 @@ So we have to change the existing security configuration to enable token based a
 We also want to make sure, our resource server is working with stateless token authentication, so we have to configure stateless
 sessions (i.e. prevent _JSESSION_ cookies).
 
-Open the class _com.example.library.server.config.WebSecurityConfiguration_ and change the
-existing configuration like this:
+Open the class _com.example.todo.config.ToDoWebSecurityConfiguration_ and change the
+existing configuration like this (only the security configuration block for the API):
 
 ```java
-package com.example.library.server.config;
+package com.example.todo.config;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.info.InfoEndpoint;
+import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusScrapeEndpoint;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.Collections;
+import org.springframework.security.web.SecurityFilterChain;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
-@Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
+public class ToDoWebSecurityConfiguration {
 
-  @Override
-  protected void configure(HttpSecurity http) throws Exception {
-    http.sessionManagement()
-        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        .and()
-        .cors(withDefaults())
-        .csrf()
-        .disable()
-        .authorizeRequests()
-        .anyRequest()
-        .fullyAuthenticated()
-        .and()
-        .oauth2ResourceServer()
-        .jwt();
-  }
-  
+  // ...  
+
+  /*
+   * Security configuration for user and todos Rest API.
+   */
   @Bean
-  PasswordEncoder passwordEncoder() {
-    return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+  @Order(4)
+  public SecurityFilterChain api(HttpSecurity http) throws Exception {
+    http.mvcMatcher("/api/**")
+            .authorizeRequests()
+            .mvcMatchers("/api/users/me").hasAnyAuthority("SCOPE_USER", "SCOPE_ADMIN")
+            .mvcMatchers("/api/users/**").hasAuthority("SCOPE_ADMIN")
+            .anyRequest().hasAnyAuthority("SCOPE_USER", "SCOPE_ADMIN")
+            .and()
+            // only disable CSRF for demo purposes or when NOT using session cookies for auth
+            .csrf().disable() // (2)
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) // 1
+            .and()
+            .oauth2ResourceServer().jwt(withDefaults()); // (3)
+    return http.build();
   }
 
-  @Bean
-  CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(Arrays.asList("https://localhost:4200", "http://localhost:4200"));
-    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-    configuration.setAllowedHeaders(Collections.singletonList(CorsConfiguration.ALL));
-    configuration.setAllowCredentials(true);
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/**", configuration);
-    return source;
-  }
+  // ...
 }
 ```
 
-This configuration above
-* configures stateless sessions (i.e. no _JSESSION_ cookies anymore)
-* disables CSRF protection (with stateless sessions, i.e. without session cookies we do not need this anymore)
-  (which also enables us to even make post requests on the command line)
+This configuration above:
+* configures stateless sessions (i.e. no _JSESSION_ cookies anymore) (1)
+* disables CSRF protection (with stateless sessions, i.e. without session cookies this kind of attack does not work anymore, 
+so we do not need this anymore). As a benefit this also enables us to even make post requests on the command line. (2)
 * protects any request (i.e. requires authentication for any endpoint)
-* enables this application as a resource server with expecting access tokens in JWT format (as of spring security 5.2 you may also
-  configure this to use opaque tokens instead)
+* enables this application to switch authentication to OAuth2/OIDC resource server with expecting access tokens in JWT format 
+(as of spring security 5.2 you may also configure this to use opaque - aka reference - tokens instead) (3)
 
-_PasswordEncoder_ is not required anymore as we now stopped storing passwords
-in our resource server, but for time reasons we won't delete it. Otherwise, we would need
-plenty of time just for removing all password related stuff from other source code locations.
-
-The `.cors(withDefaults())` expression configures [Cross-Origin Resource Sharing (CORS)](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS).
-This configuration is done in conjunction with the `corsConfigurationSource()` bean definition.
-
-For now, we can ignore this setting as this is only important when making AJAX request to this application from a javascript client.
+Also, the _PasswordEncoder_ bean defined in this configuration is not required anymore as we now stopped storing passwords
+in our resource server, so you can also delete that bean definition. Please make sure that you also remove the _PasswordEncoder_ 
+from the _com.example.todo.DataInitializer_ class, just replace the encoder calls here with the default string _"n/a"_ as the password 
+is not relevant anymore.
 
 <hr>
 
 ### Step 2: Run and test basic resource server
 
-Now it should be possible to re-start the reconfigured application _com.example.library.server.Lab1InitialLibraryServerApplication_.
+Now it should be possible to re-start the reconfigured application _com.example.todo.ToDoApplicationLab1Initial_.
 Or just use the `gradlew bootRun` command.
 
 Now, the requests you have tried when starting this lab using basic authentication won't work anymore
 as we now require bearer tokens in JWT format to authenticate at our resource server.
 
-With basic authentication when omitting the credentials you got this response:
+Just to memorize: With basic authentication when omitting the credentials you got this response:
 
 ```http
 HTTP/1.1 401 
@@ -331,13 +344,13 @@ Now try again with this request:
 httpie:
 
 ```shell
-http localhost:9091/library-server/books
+http localhost:9090/api/users
 ``` 
 
 curl:
 
 ```shell
-curl -i http://localhost:9091/library-server/books
+curl -i http://localhost:9090/api/users
 ```
 
 You now will get this answer:
@@ -347,78 +360,50 @@ HTTP/1.1 401
 WWW-Authenticate: Bearer
 ```
 
-So what is needed here is a JSON Web Token (JWT).
+So what is needed here is a bearer token, in our case in fact a JSON Web Token (JWT).
 First we need to get such token, and then we can try to call this API again.
 
-To do this we will use the _resource owner password grant_ to directly obtain an access token
-from Spring Authorization Server by specifying our credentials as part of the request.
+For convenience, in the past we could use the _resource owner password grant_ to directly obtain an access token
+from Spring Authorization Server via the command line by specifying our credentials as part of the request.
 
 __You may argue now: "This is just like doing basic authentication??"__
 
-Yes, you're right. You should __ONLY__ use this grant flow for testing purposes as it
-completely bypasses the base concepts of OAuth 2. Especially when using the command line this is the only possible
-flow to use if you want to authenticate a user. If no user is involved, then you can also use the _client credentials grant_.
+Yes, you're right. This grant flow completely bypasses the base concepts of OAuth 2. This is why in OAuth 2.1 this grant flow 
+is deprecated and will be removed from the standard.
+And because of this, the Spring Authorization Server does not support that grant flow.
 
-By using Postman you can also use the _authorization code grant_.
+So, how to get a token now?
+You basically have two options as part of this workshop:
 
-This is how this password grant request looks like:
+1. If you have Postman installed (or just install it now from [https://www.postman.com/downloads](https://www.postman.com/downloads/)) you
+can use the authorization code flow (+ PKCE) as built in functionality (even in the free edition)
+2. You can use the provided test client (see [lab3](../lab3)) to get a token. Just follow instruction in the [readme](../lab3/README.md)
 
-httpie:
+For both options please login as _bwayne/wayne_ to get a token authorized to perform the request following jsut now..
 
-```shell
-http --form http://localhost:8080/auth/realms/workshop/protocol/openid-connect/token grant_type=password \
-username=ckent password=kent client_id=library-client client_secret=9584640c-3804-4dcd-997b-93593cfb9ea7
-``` 
-
-curl:
-
-```shell
-curl -X POST -d 'grant_type=password&username=ckent&password=kent&client_id=library-client&client_secret=9584640c-3804-4dcd-997b-93593cfb9ea7' \
-http://localhost:8080/auth/realms/workshop/protocol/openid-connect/token
-```
-
-This should return an access token together with a refresh token:
-
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-{
-    "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCIgO...",
-    "expires_in": 300,
-    "not-before-policy": 1556650611,
-    "refresh_expires_in": 1800,
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCIg...",
-    "scope": "profile email user",
-    "session_state": "c92a82d1-8e6d-44d7-a2f3-02f621066968",
-    "token_type": "bearer"
-}
-```
-
-To make the same request for a list of books (like in the beginning of this lab) we have to
+After you have received a token by either way above you can make the same request for a list of todos (like in the beginning of this lab) we have to
 specify the access token as part of a _Authorization_ header of type _Bearer_ like this:
 
 httpie:
 
 ```shell
-http localhost:9091/library-server/users \
-'Authorization: Bearer [access_token]'
+http localhost:9090/api/todos user==c52bf7db-db55-4f89-ac53-82b40e8c57c2 --auth-type=bearer --auth=[access_token]
 ```
 
 curl:
 
 ```shell
 curl -H 'Authorization: Bearer [access_token]' \
--v http://localhost:9091/library-server/users
+-v "localhost:9090/api/todos user==c52bf7db-db55-4f89-ac53-82b40e8c57c2"
 ```
 
 You have to replace _[access_token]_ with the one you have obtained in previous request.  
-Now the user authenticates by the given token, but even with using the correct user Clark Kent you get a _"403"_ response (_Forbidden_).
+Now the user authenticates by the given token, but even with using the correct user Bruce Wayne you get a _"403"_ response (_Forbidden_).
 
 This is due to the fact that Spring Security 5 automatically maps all scopes that are part of the
 JWT token to the corresponding authorities.
-
-![Manual Role Mapping](../docs/images/manual_role_mapping.png)
+For example the scopes _"openid profile"_ will be mapped automatically to the authorities _SCOPE_openid_ and _SCOPE_profile_. And for sure
+that does not map to our requirement to have _ROLE_USER_ and/or _ROLE_ADMIN_ as authorities. 
 
 Navigate your web browser to [jwt.io](https://jwt.io) and paste your access token into the
 _Encoded_ text field.
@@ -473,13 +458,149 @@ public class UserService {
 }
 ```  
 
-You can imagine what effort this would be especially for big applications using lots of authorizations.
-So we won't add these additional authority checks, we rather want to implement our customized JWT to Spring Security authorities mapping.
 So let's continue with this in the next step.
+
+To fix this you have 3 options:
+
+1. Adapt our configuration in _com.example.todo.config.ToDoWebSecurityConfiguration_ and the _@PreAuthorize_ annotations with the _SCOPE_xx_ authorities
+in the service classes. You can imagine what effort this would be especially for big applications using lots of authorizations. 
+So usually only makes sense for small applications with only a few authorities to be replaced.
+2. Implement a simple mapping that reads the authorities from the intended _roles_ claim and not from the scopes and also uses
+   the _ROLE__ prefix again instead of _SCOPE__.
+3. Implement a full conversion that maps all contents (like firstname and lastname in addition to the roles and authorities) 
+of the JWT to our _User_ object
+
+Here you see the adapted security configuration for option 1:
+
+```
+package com.example.todo.config;
+
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.info.InfoEndpoint;
+import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusScrapeEndpoint;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+
+import static org.springframework.security.config.Customizer.withDefaults;
+
+@EnableWebSecurity
+public class ToDoWebSecurityConfiguration {
+
+    // ...
+
+    /*
+     * Configure actuator endpoint security.
+     * Allow access for everyone to health, info and prometheus.
+     * All other actuator endpoints require ADMIn role.
+     */
+    @Bean
+    @Order(3)
+    public SecurityFilterChain actuator(HttpSecurity http) throws Exception {
+        http.requestMatcher(EndpointRequest.toAnyEndpoint())
+                .authorizeRequests(
+                        authorizeRequests ->
+                                authorizeRequests
+                                        .requestMatchers(EndpointRequest.to(
+                                                HealthEndpoint.class,
+                                                InfoEndpoint.class,
+                                                PrometheusScrapeEndpoint.class))
+                                        .permitAll()
+                                        .requestMatchers(EndpointRequest.toAnyEndpoint()).hasAuthority("SCOPE_ADMIN")
+                )
+                .httpBasic(withDefaults()).formLogin(withDefaults());
+        return http.build();
+    }
+
+    /*
+     * Security configuration for user and todos Rest API.
+     */
+    @Bean
+    @Order(4)
+    public SecurityFilterChain api(HttpSecurity http) throws Exception {
+        http.mvcMatcher("/api/**")
+                .authorizeRequests()
+                .mvcMatchers("/api/users/me").hasAnyAuthority("SCOPE_USER", "SCOPE_ADMIN")
+                .mvcMatchers("/api/users/**").hasAuthority("SCOPE_ADMIN")
+                .anyRequest().hasAnyAuthority("SCOPE_USER", "SCOPE_ADMIN")
+                .and()
+                // only disable CSRF for demo purposes or when NOT using session cookies for auth
+                .csrf().disable()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .oauth2ResourceServer().jwt(withDefaults());
+        return http.build();
+    }
+
+    /...
+}
+```
+
+You can find this kind of solution in the corresponding final reference solution located in the [lab1/final-automatic](final-automatic) folder.
+In the following sections we will look into the other two mapping options.
+Let's start with option 2.
 
 <hr>
 
-### Step 3: Custom JWT converter
+### Step 3: Custom JWT authorities mapper
+
+To achieve this simply add the following new bean to our web security configuration class:
+
+```
+package com.example.todo.config;
+
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.info.InfoEndpoint;
+import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusScrapeEndpoint;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.web.SecurityFilterChain;
+
+import static org.springframework.security.config.Customizer.withDefaults;
+
+@EnableWebSecurity
+public class ToDoWebSecurityConfiguration {
+
+    // ...
+
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("roles"); // 1
+        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_"); // 2
+
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+        return jwtAuthenticationConverter;
+    }
+}
+```
+
+The new bean above
+
+* reads the spring security authorities from the _roles_ claim of the incoming JWT (1)
+* maps it to spring security authorities using the _ROLE__ prefix (2)
+
+You can find this kind of solution in the corresponding final reference solution located in the [lab1/final-jwt](final-jwt) folder.
+
+### (Optional) Step 4: Custom JWT converter
+
+TODO, start again here
+
 
 To add our custom mapping for a JWT access token Spring Security requires us to implement
 the interface _Converter<Jwt, AbstractAuthenticationToken>_.
