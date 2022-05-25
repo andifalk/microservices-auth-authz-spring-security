@@ -414,53 +414,140 @@ If you scroll down a bit on the right hand side then you will see the following 
 
 ```json
 {
-  "scope": "library_admin email profile",
-  "email_verified": true,
-  "name": "Clark Kent",
-  "groups": [
-    "library_admin"
+  "sub": "c52bf7db-db55-4f89-ac53-82b40e8c57c2",
+  "aud": "demo-client-pkce",
+  "nbf": 1653471685,
+  "scope": [
+    "openid",
+    "USER"
   ],
-  "preferred_username": "ckent",
-  "given_name": "Clark",
-  "family_name": "Kent",
-  "email": "clark.kent@example.com"
+  "roles": [
+    "USER"
+  ],
+  "iss": "http://localhost:9000",
+  "exp": 1653471985,
+  "given_name": "Bruce",
+  "iat": 1653471685,
+  "family_name": "Wayne",
+  "email": "bruce.wayne@example.com"
 }
 ```
 
-As you can see our user has the scopes _library_admin_, _email_ and _profile_.
-Spring Security maps these scopes to the Spring Security authorities _SCOPE_library_admin_, _SCOPE_email_ and _SCOPE_profile_ by default.
+As you can see our user has the scopes _openid_, and _USER_.
+Spring Security maps these scopes to the Spring Security authorities _SCOPE_openid_ and _SCOPE_USER_ by default.
 
 ![JWT IO Decoded](../docs/images/jwt_io_decoded.png)
 
-If you have a look inside the _com.example.library.server.business.UserService_ class
-you will notice that the corresponding method has the following authorization check:
+If you have a look inside the _com.example.todo.service.ToDoService_ class
+you will notice that this has the following authorization checks on method security layer:
 
 ```java
-public class UserService {
-  //...  
-  @PreAuthorize("hasRole('LIBRARY_ADMIN')")
-  public List<User> findAll() {
-    return userRepository.findAll();
-  }
+package com.example.todo.service;
+
+import com.example.todo.entity.ToDoItemEntityRepository;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+@Transactional(readOnly = true)
+public class ToDoService {
+
+    //...
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<ToDoItem> findAll() {
+        return toDoItemEntityRepository.findAll()
+                .stream().map(ToDoItem::new).collect(Collectors.toList());
+    }
+
+    // ...
 }
 ``` 
 
-The required authority _ROLE_LIBRARY_ADMIN_ does not match the mapped authority _SCOPE_library_admin_.
-To solve this we would have to add the _SCOPE_xxx_ authorities to the existing ones like this:
+The required authorities _ROLE_ADMIN_ and _ROLE_USER_ do not match the automatically mapped authorities of _SCOPE_xxx_.
+The same problem applies to our web security configuration on the web layer:
 
 ```java
-public class UserService {
-  //...
-  @PreAuthorize("hasRole('LIBRARY_ADMIN') || hasAuthority('SCOPE_library_admin')")
-  public List<User> findAll() {
-    return userRepository.findAll();
+package com.example.todo.config;
+
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.info.InfoEndpoint;
+import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusScrapeEndpoint;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.web.SecurityFilterChain;
+
+import static org.springframework.security.config.Customizer.withDefaults;
+
+@EnableWebSecurity
+public class ToDoWebSecurityConfiguration {
+
+  // ...
+  
+  /*
+   * Configure actuator endpoint security.
+   * Allow access for everyone to health, info and prometheus.
+   * All other actuator endpoints require ADMIn role.
+   */
+  @Bean
+  @Order(3)
+  public SecurityFilterChain actuator(HttpSecurity http) throws Exception {
+    http.requestMatcher(EndpointRequest.toAnyEndpoint())
+            .authorizeRequests(
+                    authorizeRequests ->
+                            authorizeRequests
+                                    .requestMatchers(EndpointRequest.to(
+                                            HealthEndpoint.class,
+                                            InfoEndpoint.class,
+                                            PrometheusScrapeEndpoint.class))
+                                    .permitAll()
+                                    .requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN")
+            )
+            .httpBasic(withDefaults()).formLogin(withDefaults());
+    return http.build();
   }
+
+  /*
+   * Security configuration for user and todos Rest API.
+   */
+  @Bean
+  @Order(4)
+  public SecurityFilterChain api(HttpSecurity http) throws Exception {
+    http.mvcMatcher("/api/**")
+            .authorizeRequests()
+            .mvcMatchers("/api/users/me").hasAnyRole("USER", "ADMIN")
+            .mvcMatchers("/api/users/**").hasRole("ADMIN")
+            .anyRequest().hasAnyRole("USER", "ADMIN")
+            .and()
+            // only disable CSRF for demo purposes or when NOT using session cookies for auth
+            .csrf().disable()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
+            .oauth2ResourceServer().jwt(withDefaults());
+    return http.build();
+  }
+
+  // ...
 }
-```  
+```
 
-So let's continue with this in the next step.
-
-To fix this you have 3 options:
+To fix this you basically have 3 options:
 
 1. Adapt our configuration in _com.example.todo.config.ToDoWebSecurityConfiguration_ and the _@PreAuthorize_ annotations with the _SCOPE_xx_ authorities
 in the service classes. You can imagine what effort this would be especially for big applications using lots of authorizations. 
