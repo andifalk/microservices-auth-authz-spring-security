@@ -16,8 +16,9 @@ starting with the first hands-on lab (especially the server side parts)__.
     * [Explore the initial server application](#explore-the-initial-application)
     * [Step 1: Configure as resource server](#step-1-basic-configuration)
     * [Step 2: Run and test basic resource server](#step-2-run-and-test-basic-resource-server)
-    * [Step 3: Implement a custom JWT converter](#step-3-custom-jwt-converter)
-    * [Step 4: An additional JWT validator for 'audience' claim](#step-4-jwt-validation-for-the-audience-claim)
+    * [Step 3: Implement a custom JWT authorities mapper](#step-3-custom-jwt-authorities-mapper)
+    * [(Optional) Step 4: Implement a custom JWT converter](#optional-step-4-custom-jwt-converter)
+    * [(Optional) Step 5: An additional JWT validator for 'audience' claim](#optional-step-5-jwt-validation-for-the-audience-claim)
 
 ## Learning Targets
 
@@ -251,13 +252,15 @@ Spring Security then validates by default:
 * that the JWT is not expired
 
 Usually this configuration would be sufficient to configure a resource server (by autoconfiguring all settings using spring boot).
-As there is already a security configuration for basic authentication in place (_com.example.library.server.config.WebSecurityConfiguration_),
-this disables the spring boot autoconfiguration. Starting with Spring Boot 2 you always have to configure Spring Security
-yourself as soon as you introduce a class which extends _WebSecurityConfigurerAdapter_.
+As there is already a security configuration for basic authentication in place (_com.example.toto.config.ToDoWebSecurityConfiguration_),
+this disables the spring boot autoconfiguration.
+
+__Please note__: The security configuration already uses the new approach of configuring beans of type _SecurityFilterChain_ instead of extending 
+_WebSecurityConfigurerAdapter_ class.
 
 So we have to change the existing security configuration to enable token based authentication instead of basic authentication.
 We also want to make sure, our resource server is working with stateless token authentication, so we have to configure stateless
-sessions (i.e. prevent _JSESSION_ cookies).
+sessions (i.e. prevent _JSESSION_ cookies and CSRF attack surface).
 
 Open the class _com.example.todo.config.ToDoWebSecurityConfiguration_ and change the
 existing configuration like this (only the security configuration block for the API):
@@ -321,6 +324,7 @@ Also, the _PasswordEncoder_ bean defined in this configuration is not required a
 in our resource server, so you can also delete that bean definition. Please make sure that you also remove the _PasswordEncoder_ 
 from the _com.example.todo.DataInitializer_ class, just replace the encoder calls here with the default string _"n/a"_ as the password 
 is not relevant anymore.
+So instead of ```passwordEncoder.encode("wayne")``` just replace it with ```"n/a"```.
 
 <hr>
 
@@ -357,20 +361,21 @@ You now will get this answer:
 
 ```http
 HTTP/1.1 401 
+...
 WWW-Authenticate: Bearer
 ```
 
-So what is needed here is a bearer token, in our case in fact a JSON Web Token (JWT).
+So what is needed here is a bearer token to authenticate, in our case in fact it is a JSON Web Token (JWT).
 First we need to get such token, and then we can try to call this API again.
 
-For convenience, in the past we could use the _resource owner password grant_ to directly obtain an access token
+For convenience, in the past we have been able to use the _resource owner password grant_ to directly obtain an access token
 from Spring Authorization Server via the command line by specifying our credentials as part of the request.
 
 __You may argue now: "This is just like doing basic authentication??"__
 
 Yes, you're right. This grant flow completely bypasses the base concepts of OAuth 2. This is why in OAuth 2.1 this grant flow 
 is deprecated and will be removed from the standard.
-And because of this, the Spring Authorization Server does not support that grant flow.
+And because of this, the Spring Authorization Server does and will not support the password grant flow.
 
 So, how to get a token now?
 You basically have two options as part of this workshop:
@@ -379,10 +384,9 @@ You basically have two options as part of this workshop:
 can use the authorization code flow (+ PKCE) as built in functionality (even in the free edition)
 2. You can use the provided test client (see [lab3](../lab3)) to get a token. Just follow instruction in the [readme](../lab3/README.md)
 
-For both options please login as _bwayne/wayne_ to get a token authorized to perform the request following jsut now..
+For both options please login as _bwayne/wayne_ to get a token authorized to perform the request we will executing below.
 
-After you have received a token by either way above you can make the same request for a list of todos (like in the beginning of this lab) we have to
-specify the access token as part of a _Authorization_ header of type _Bearer_ like this:
+After you have received a token by either way above you can make the same request for a list of todos (like in the beginning of this lab). This time we have to present the access token as part of the _Authorization_ header of type _Bearer_ like this:
 
 httpie:
 
@@ -393,8 +397,7 @@ http localhost:9090/api/todos user==c52bf7db-db55-4f89-ac53-82b40e8c57c2 --auth-
 curl:
 
 ```shell
-curl -H 'Authorization: Bearer [access_token]' \
--v "localhost:9090/api/todos user==c52bf7db-db55-4f89-ac53-82b40e8c57c2"
+curl -H 'Authorization: Bearer [access_token]' -v "localhost:9090/api/todos user==c52bf7db-db55-4f89-ac53-82b40e8c57c2"
 ```
 
 You have to replace _[access_token]_ with the one you have obtained in previous request.  
@@ -403,12 +406,12 @@ Now the user authenticates by the given token, but even with using the correct u
 This is due to the fact that Spring Security 5 automatically maps all scopes that are part of the
 JWT token to the corresponding authorities.
 For example the scopes _"openid profile"_ will be mapped automatically to the authorities _SCOPE_openid_ and _SCOPE_profile_. And for sure
-that does not map to our requirement to have _ROLE_USER_ and/or _ROLE_ADMIN_ as authorities. 
+that does not map to our requirement of authorities to include _ROLE_USER_ and/or _ROLE_ADMIN_. 
 
 Navigate your web browser to [jwt.io](https://jwt.io) and paste your access token into the
 _Encoded_ text field.
 
-![JWT IO](../docs/images/jwt_io.png)
+![JWT IO Decoded](../docs/images/jwt_io_decoded.png)
 
 If you scroll down a bit on the right hand side then you will see the following block:
 
@@ -435,8 +438,6 @@ If you scroll down a bit on the right hand side then you will see the following 
 
 As you can see our user has the scopes _openid_, and _USER_.
 Spring Security maps these scopes to the Spring Security authorities _SCOPE_openid_ and _SCOPE_USER_ by default.
-
-![JWT IO Decoded](../docs/images/jwt_io_decoded.png)
 
 If you have a look inside the _com.example.todo.service.ToDoService_ class
 you will notice that this has the following authorization checks on method security layer:
@@ -557,7 +558,8 @@ So usually only makes sense for small applications with only a few authorities t
 3. Implement a full conversion that maps all contents (like firstname and lastname in addition to the roles and authorities) 
 of the JWT to our _User_ object
 
-Here you see the adapted security configuration for option 1:
+As part of the workshop we will follow along option number 2. Option 3 is an optional step if there still is time left.
+Before we head to the next step, here you see the adapted security configuration for option 1:
 
 ```
 package com.example.todo.config;
@@ -629,7 +631,7 @@ public class ToDoWebSecurityConfiguration {
 }
 ```
 
-You can find this kind of solution in the corresponding final reference solution located in the [lab1/final-automatic](final-automatic) folder.
+You can find this kind of _automatic' standard solution in the corresponding final reference application located in the [lab1/final-automatic](final-automatic) folder.
 In the following sections we will look into the other two mapping options.
 Let's start with option 2.
 
@@ -637,7 +639,9 @@ Let's start with option 2.
 
 ### Step 3: Custom JWT authorities mapper
 
-To achieve this simply add the following new bean to our web security configuration class:
+In this step we would like to add a custom mapping for authorizations, so we can get rid of the automatic _SCOPE_xx_ authorities back again to
+ROLE_xx authorities.
+To achieve this, simply add the following new bean to our web security configuration class:
 
 ```
 package com.example.todo.config;
@@ -686,10 +690,9 @@ You can find this kind of solution in the corresponding final reference solution
 
 ### (Optional) Step 4: Custom JWT converter
 
-TODO, start again here
+The third option is the one with the most effort. Here we completely map token claim values int a _User_ object.
 
-
-To add our custom mapping for a JWT access token Spring Security requires us to implement
+To implement a full custom mapping for a JWT access token Spring Security requires us to implement
 the interface _Converter<Jwt, AbstractAuthenticationToken>_.
 
 ```java
@@ -711,21 +714,22 @@ public interface Converter<S, T> {
 }
 ```
 
-In general, you have two choices here:
+In general, you have again two choices here:
 
-* Map the corresponding _LibraryUser_ to the JWT token user data and read the
+* Map the JWT token user data to the corresponding _User_ and read the
   authorization data from the token and map it to Spring Security authorities
-* Map the corresponding _LibraryUser_ to the JWT token user data but map locally
-  stored roles of the _LibraryUser_ to Spring Security authorities.
+* Identify the locally stored _User_ by the _subject_ claim in the token and 
+map the corresponding _User_ from the JWT token user data but map the
+  persistent roles of the _User_ to Spring Security authorities.
 
-In this workshop we will use the first approach and...
+In this workshop we will use the second option...
 
 * ...read the authorization data from the _scope_ claim inside the JWT token
 * ...map to our local _LibraryUser_ by reusing the _LibraryUserDetailsService_ to search
   for a user having the same email as the _email_ claim inside the JWT token
 
-To achieve this please go ahead and create a new class _LibraryUserJwtAuthenticationConverter_
-in package _com.example.library.server.security_ with the following contents:
+To achieve this please go ahead and create a new class _JwtUserAuthenticationConverter_
+in package _com.example.todo.security_ with the following contents:
 
 ```java
 package com.example.library.server.security;
@@ -745,140 +749,92 @@ import java.util.stream.Collectors;
 
 /** JWT converter that takes the roles from 'groups' claim of JWT token. */
 @SuppressWarnings("unused")
-public class LibraryUserJwtAuthenticationConverter
-    implements Converter<Jwt, AbstractAuthenticationToken> {
-  private static final String SCOPE_CLAIM = "scope";
-  private static final String ROLE_PREFIX = "ROLE_";
+public class JwtUserAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
-  private final LibraryUserDetailsService libraryUserDetailsService;
+  private final UserService userService;
 
-  public LibraryUserJwtAuthenticationConverter(
-      LibraryUserDetailsService libraryUserDetailsService) {
-    this.libraryUserDetailsService = libraryUserDetailsService;
+  public JwtUserAuthenticationConverter(UserService userService) {
+    this.userService = userService;
   }
 
   @Override
   public AbstractAuthenticationToken convert(Jwt jwt) {
-    Collection<GrantedAuthority> authorities = extractAuthorities(jwt);
-    return Optional.ofNullable(
-            libraryUserDetailsService.loadUserByUsername(jwt.getClaimAsString("email")))
-        .map(u -> new UsernamePasswordAuthenticationToken(u, "n/a", authorities))
-        .orElseThrow(() -> new BadCredentialsException("No user found"));
-  }
-
-  private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
-    return this.getScopes(jwt).stream()
-        .map(authority -> ROLE_PREFIX + authority.toUpperCase())
-        .map(SimpleGrantedAuthority::new)
-        .collect(Collectors.toList());
-  }
-
-  @SuppressWarnings("unchecked")
-  private Collection<String> getScopes(Jwt jwt) {
-    Object scopes = jwt.getClaims().get(SCOPE_CLAIM);
-    if (scopes instanceof String) {
-      if (StringUtils.hasText((String) scopes)) {
-        return Arrays.asList(((String) scopes).split(" "));
-      }
-      return Collections.emptyList();
-    }
-    if (scopes instanceof Collection) {
-      return (Collection<String>) scopes;
-    }
-    return Collections.emptyList();
+    UUID userIdentifier = UUID.fromString(jwt.getSubject());
+    return userService.findOneByIdentifier(userIdentifier).map(u ->
+            new UsernamePasswordAuthenticationToken(u, jwt.getTokenValue(), u.getAuthorities())
+    ).orElse(null);
   }
 }
 ```
 
-This converter maps the JWT token information to a _LibraryUser_ by associating
+This converter maps the JWT token information to a _User_ by associating
 these via the _email_ claim. It reads the authorities from _groups_ claim in the JWT token and maps these
 to the corresponding authorities.  
-This way we can map these groups again to our original authorities, e.g. _ROLE_LIBRARY_ADMIN_.
+This way we can map these groups again to our original authorities, e.g. _ROLE_ADMIN_.
 
-No open again the class _com.example.library.server.config.WebSecurityConfiguration_ and add this new JWT
+No open again the class _com.example.todo.config.ToDoWebSecurityConfiguration_ and add this new JWT
 converter to the JWT configuration:
 
 ```java
-package com.example.library.server.config;
+package com.example.todo.config;
 
-import com.example.library.server.security.LibraryUserDetailsService;
-import com.example.library.server.security.LibraryUserJwtAuthenticationConverter;
+import com.example.todo.security.JwtUserAuthenticationConverter;
+import com.example.todo.service.UserService;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.info.InfoEndpoint;
+import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusScrapeEndpoint;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.Collections;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.web.SecurityFilterChain;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
-@Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
+public class ToDoWebSecurityConfiguration {
 
-  private final LibraryUserDetailsService libraryUserDetailsService;
+  //...
+  
+  /*
+   * Security configuration for user and todos Rest API.
+   */
+  @Bean
+  @Order(4)
+  public SecurityFilterChain api(HttpSecurity http) throws Exception {
+    http.mvcMatcher("/api/**")
+            .authorizeRequests()
+            .mvcMatchers("/api/users/me").hasAnyRole("USER", "ADMIN")
+            .mvcMatchers("/api/users/**").hasRole("ADMIN")
+            .anyRequest().hasAnyRole("USER", "ADMIN")
+            .and()
+            // only disable CSRF for demo purposes or when NOT using session cookies for auth
+            .csrf().disable()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
+            .oauth2ResourceServer().jwt().jwtAuthenticationConverter(customJwtUserAuthenticationConverter()); //1
+    return http.build();
+  }
 
-  public WebSecurityConfiguration(LibraryUserDetailsService libraryUserDetailsService) {
-    this.libraryUserDetailsService = libraryUserDetailsService;
+  // ...
+
+  public Converter<Jwt, AbstractAuthenticationToken> customJwtUserAuthenticationConverter() {
+    return new JwtUserAuthenticationConverter(userService);
   }
 
-  @Override
-  protected void configure(HttpSecurity http) throws Exception {
-    http.sessionManagement()
-        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        .and()
-        .cors(withDefaults())
-        .csrf()
-        .disable()
-        .authorizeRequests()
-        .anyRequest()
-        .fullyAuthenticated()
-        .and()
-        .oauth2ResourceServer()
-        .jwt()
-        .jwtAuthenticationConverter(libraryUserJwtAuthenticationConverter());
-  }
-  
-  @Bean
-  LibraryUserJwtAuthenticationConverter libraryUserJwtAuthenticationConverter() {
-    return new LibraryUserJwtAuthenticationConverter(libraryUserDetailsService);
-  }
-  
-  @Bean
-  PasswordEncoder passwordEncoder() {
-    return PasswordEncoderFactories.createDelegatingPasswordEncoder();
-  }
-  
-  @Bean
-  CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(Arrays.asList("https://localhost:4200", "http://localhost:4200"));
-    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-    configuration.setAllowedHeaders(Collections.singletonList(CorsConfiguration.ALL));
-    configuration.setAllowCredentials(true);
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/**", configuration);
-    return source;
-  }
 }
 ```
 
-_<u>Note:</u>_: The other approach can be seen in class _LibraryUserRolesJwtAuthenticationConverter_ in completed
-application in project _library-server-complete-custom_.
-
 <hr>
 
-### Step 4: JWT validation for the 'audience' claim
+### (Optional) Step 5: JWT validation for the 'audience' claim
 
 Implementing an additional token validator is quite easy, you just have to implement the
 provided interface _OAuth2TokenValidator_.
@@ -896,13 +852,13 @@ There is also a new [draft specification](https://tools.ietf.org/html/draft-ietf
 on the way to provide a standardized and interoperable profile as an alternative to the proprietary JWT access token layouts.
 
 So we should also validate that our resource server only successfully authenticates those requests bearing access tokens
-containing the expected value of "library-service" in the _audience_ claim.
+containing the expected value of "todo-service" in the _audience_ claim.
 
-So let's create a new class _AudienceValidator_ in package _com.example.library.server.security_
+So let's create a new class _AudienceValidator_ in package _com.example.todo.security_
 with the following contents:
 
 ```java
-package com.example.library.server.security;
+package com.example.todo.security;
 
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
@@ -913,10 +869,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
 public class AudienceValidator implements OAuth2TokenValidator<Jwt> {
 
   private OAuth2Error error =
-      new OAuth2Error("invalid_token", "The required audience 'library-service' is missing", null);
+      new OAuth2Error("invalid_token", "The required audience 'todo-service' is missing", null);
 
   public OAuth2TokenValidatorResult validate(Jwt jwt) {
-    if (jwt.getAudience().contains("library-service")) {
+    if (jwt.getAudience().contains("todo-service")) {
       return OAuth2TokenValidatorResult.success();
     } else {
       return OAuth2TokenValidatorResult.failure(error);
@@ -925,14 +881,14 @@ public class AudienceValidator implements OAuth2TokenValidator<Jwt> {
 }
 ```
 
-Adding such validator is a bit more effort as we have to replace the auto-configured JwtDecoder
+Adding such validator is a bit more effort as we have to replace the autoconfigured JwtDecoder
 with our own bean definition. An additional validator can only be added this way.
 
 To achieve this open again the class _com.example.library.server.config.WebSecurityConfiguration_
 one more time and add our customized JwtDecoder.
 
 ```java
-package com.example.library.server.config;
+package com.example.todo.config;
 
 import com.example.library.server.security.AudienceValidator;
 import com.example.library.server.security.LibraryUserDetailsService;
@@ -995,40 +951,9 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .jwtAuthenticationConverter(libraryUserJwtAuthenticationConverter());
     }
 
-    @Bean
-    JwtDecoder jwtDecoder() {
-        NimbusJwtDecoder jwtDecoder =
-                NimbusJwtDecoder.withJwkSetUri(oAuth2ResourceServerProperties.getJwt().getJwkSetUri())
-                        .build();
+    
 
-        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator();
-        OAuth2TokenValidator<Jwt> withIssuer =
-                JwtValidators.createDefaultWithIssuer(
-                        oAuth2ResourceServerProperties.getJwt().getIssuerUri());
-        OAuth2TokenValidator<Jwt> withAudience =
-                new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
-
-        jwtDecoder.setJwtValidator(withAudience);
-
-        return jwtDecoder;
-    }
-
-    @Bean
-    LibraryUserJwtAuthenticationConverter libraryUserJwtAuthenticationConverter() {
-        return new LibraryUserJwtAuthenticationConverter(libraryUserDetailsService);
-    }
-
-    @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("https://localhost:4200", "http://localhost:4200"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-        configuration.setAllowedHeaders(Collections.singletonList(CorsConfiguration.ALL));
-        configuration.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+    //...
 }
 ```  
 
