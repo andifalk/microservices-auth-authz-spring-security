@@ -384,7 +384,7 @@ You basically have two options as part of this workshop:
 can use the authorization code flow (+ PKCE) as built in functionality (even in the free edition)
 2. You can use the provided test client (see [lab3](../lab3)) to get a token. Just follow instruction in the [readme](../lab3/README.md)
 
-For both options please login as _bwayne/wayne_ to get a token authorized to perform the request we will executing below.
+For both options please log in as _bwayne/wayne_ to get a token authorized to perform the request we will execute below.
 
 After you have received a token by either way above you can make the same request for a list of todos (like in the beginning of this lab). This time we have to present the access token as part of the _Authorization_ header of type _Bearer_ like this:
 
@@ -548,6 +548,12 @@ public class ToDoWebSecurityConfiguration {
 }
 ```
 
+In summary this leads to authorization errors in the log like these:
+
+```syslog
+Sending JwtAuthenticationToken [Principal=org.springframework.security.oauth2.jwt.Jwt@9dd3cf4a, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=127.0.0.1, SessionId=null], Granted Authorities=[SCOPE_openid, SCOPE_profile, SCOPE_email]] to access denied handler since access is denied
+```
+
 To fix this you basically have 3 options:
 
 1. Adapt our configuration in _com.example.todo.config.ToDoWebSecurityConfiguration_ and the _@PreAuthorize_ annotations with the _SCOPE_xx_ authorities
@@ -557,6 +563,14 @@ So usually only makes sense for small applications with only a few authorities t
    the _ROLE__ prefix again instead of _SCOPE__.
 3. Implement a full conversion that maps all contents (like firstname and lastname in addition to the roles and authorities) 
 of the JWT to our _User_ object
+
+The following table also shows details for each option:
+
+| Option  | Approach                   | Principal Object | Authorities Claim | Authorities                  |
+|---------|----------------------------|------------------|-------------------|------------------------------|
+| 1       | Automatic mapping          | JWT              | scope             | SCOPE_USER, SCOPE_ADMIN, ... |
+| 2       | Custom authorities mapping | JWT              | roles             | ROLE_USER, ROLE_ADMIN, ...   |
+| 3       | Full JWT conversion        | User             | roles             | ROLE_USER, ROLE_ADMIN, ...   |
 
 As part of the workshop we will follow along option number 2. Option 3 is an optional step if there still is time left.
 Before we head to the next step, here you see the adapted security configuration for option 1:
@@ -836,23 +850,22 @@ public class ToDoWebSecurityConfiguration {
 
 ### (Optional) Step 5: JWT validation for the 'audience' claim
 
-Implementing an additional token validator is quite easy, you just have to implement the
-provided interface _OAuth2TokenValidator_.
+Implementing an additional custom token validator is quite easy, you just have to implement the
+provided interface _OAuth2TokenValidator_ and add your custom validator on top of the mandatory validators..
 
-According to [OpenID Connect 1.0 specification](https://openid.net/specs/openid-connect-core-1_0.html#IDToken) the _audience_ claim
-is mandatory for ID tokens:
+In this step we will also validate the audience (aud) claim of the access token.
 
-<blockquote cite=https://openid.net/specs/openid-connect-core-1_0.html#IDToken">
-Audience(s) that this ID Token is intended for. It MUST contain the OAuth 2.0 client_id of the Relying Party as an audience value. It MAY also contain identifiers for other audiences.
+According to the current [draft for OAuth 2.1](https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-05.html) the audience claim should be used to restrict token usage for specific resource servers:
+
+<blockquote cite=https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-05.html#name-access-token-privilege-rest">
+The privileges associated with an access token SHOULD be restricted to the minimum required for the particular application or use case. 
+[...] In particular, access tokens SHOULD be restricted to certain resource servers (audience restriction)
 </blockquote>
 
-Despite the fact that the _audience_ claim is not specified or mandatory for access tokens
-specifying and validating the _audience_ claim of access tokens is strongly recommended avoiding misusing access tokens for other resource servers.   
-There is also a new [draft specification](https://tools.ietf.org/html/draft-ietf-oauth-access-token-jwt)
-on the way to provide a standardized and interoperable profile as an alternative to the proprietary JWT access token layouts.
+Recently the OAuth working group published the new RFC 9068 standard called [JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens](https://datatracker.ietf.org/doc/html/rfc9068) that also describes the same audience claim as mandatory for access tokens.
 
 So we should also validate that our resource server only successfully authenticates those requests bearing access tokens
-containing the expected value of "todo-service" in the _audience_ claim.
+containing the expected value of _http://localhost:9090/api/todos_ in the _audience_ claim.
 
 So let's create a new class _AudienceValidator_ in package _com.example.todo.security_
 with the following contents:
@@ -860,189 +873,97 @@ with the following contents:
 ```java
 package com.example.todo.security;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-/** Validator for expected audience in access tokens. */
 public class AudienceValidator implements OAuth2TokenValidator<Jwt> {
 
-  private OAuth2Error error =
-      new OAuth2Error("invalid_token", "The required audience 'todo-service' is missing", null);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AudienceValidator.class);
+
+  private final OAuth2Error error =
+          new OAuth2Error("invalid_token", "The required audience 'http://localhost:9090/api/todos' is missing", null);
 
   public OAuth2TokenValidatorResult validate(Jwt jwt) {
-    if (jwt.getAudience().contains("todo-service")) {
+    if (jwt.getAudience().contains("http://localhost:9090/api/todos")) {
+      LOGGER.info("Successfully validate audience");
       return OAuth2TokenValidatorResult.success();
     } else {
+      LOGGER.warn(error.getDescription());
       return OAuth2TokenValidatorResult.failure(error);
     }
   }
 }
 ```
 
-Adding such validator is a bit more effort as we have to replace the autoconfigured JwtDecoder
-with our own bean definition. An additional validator can only be added this way.
+Adding such validator is a bit more effort as we have to replace the previously autoconfigured JwtDecoder
+with our own bean definition.
 
-To achieve this open again the class _com.example.library.server.config.WebSecurityConfiguration_
-one more time and add our customized JwtDecoder.
+To achieve this, open again the class _com.example.todo.config.ToDoWebSecurityConfiguration_
+one more time and add the customized JwtDecoder with the validator.
 
 ```java
 package com.example.todo.config;
 
-import com.example.library.server.security.AudienceValidator;
-import com.example.library.server.security.LibraryUserDetailsService;
-import com.example.library.server.security.LibraryUserJwtAuthenticationConverter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.info.InfoEndpoint;
+import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusScrapeEndpoint;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
-import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.Collections;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.web.SecurityFilterChain;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
-@Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
+public class ToDoWebSecurityConfiguration {
 
-    private final OAuth2ResourceServerProperties oAuth2ResourceServerProperties;
+  // ...
 
-    private final LibraryUserDetailsService libraryUserDetailsService;
+  @Bean
+  JwtDecoder jwtDecoder(OAuth2ResourceServerProperties oAuth2ResourceServerProperties) {
+    NimbusJwtDecoder jwtDecoder =
+            NimbusJwtDecoder.withJwkSetUri(oAuth2ResourceServerProperties.getJwt().getJwkSetUri())
+                    .build();
 
-    @Autowired
-    public WebSecurityConfiguration(
-            OAuth2ResourceServerProperties oAuth2ResourceServerProperties,
-            LibraryUserDetailsService libraryUserDetailsService) {
-        this.oAuth2ResourceServerProperties = oAuth2ResourceServerProperties;
-        this.libraryUserDetailsService = libraryUserDetailsService;
-    }
+    OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator();
+    OAuth2TokenValidator<Jwt> withIssuer =
+            JwtValidators.createDefaultWithIssuer(
+                    "http://localhost:9000");
+    OAuth2TokenValidator<Jwt> withAudience =
+            new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
-                .cors(withDefaults())
-                .csrf()
-                .disable()
-                .authorizeRequests()
-                .anyRequest()
-                .fullyAuthenticated()
-                .and()
-                .oauth2ResourceServer()
-                .jwt()
-                .jwtAuthenticationConverter(libraryUserJwtAuthenticationConverter());
-    }
+    jwtDecoder.setJwtValidator(withAudience);
 
-    
+    return jwtDecoder;
+  }
 
-    //...
 }
-```  
-
-As the _JwtValidators_ creator depends on the full issuer URI pointing to the OpendID Connect configuration of Spring Authorization Server
-we need to add the _issuer-uri_ in addition to _jwk-set-uri_ . So basically this now should look like this in the
-_application.yaml_ file:
-
-```yaml
-spring:
-  jpa:
-    open-in-view: false
-  jackson:
-    date-format: com.fasterxml.jackson.databind.util.StdDateFormat
-    default-property-inclusion: non_null
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: http://localhost:8080/auth/realms/workshop/protocol/openid-connect/certs
-          issuer-uri: http://localhost:8080/auth/realms/workshop
 ```
 
 Now we can re-start the application and test again the same request we had retrieved an '403' error before.
 For this just use the `gradlew bootRun` command.
 
-First get another fresh access token:
-
-httpie:
-
-```shell
-http --form http://localhost:8080/auth/realms/workshop/protocol/openid-connect/token grant_type=password \
-username=ckent password=kent client_id=library-client client_secret=9584640c-3804-4dcd-997b-93593cfb9ea7
-``` 
-
-curl:
-
-```shell
-curl -X POST -d 'grant_type=password&username=ckent&password=kent&client_id=library-client&client_secret=9584640c-3804-4dcd-997b-93593cfb9ea7' \
-http://localhost:8080/auth/realms/workshop/protocol/openid-connect/token
-```
-
-This should return an access token together with a refresh token:
-
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-{
-    "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCIgO...",
-    "expires_in": 300,
-    "not-before-policy": 1556650611,
-    "refresh_expires_in": 1800,
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCIg...",
-    "scope": "profile email user",
-    "session_state": "c92a82d1-8e6d-44d7-a2f3-02f621066968",
-    "token_type": "bearer"
-}
-```
-
-To make the same request for a list of users we have to
-specify the access token as part of a _Authorization_ header of type _Bearer_ like this:
-
-httpie:
-
-```shell
-http localhost:9091/library-server/users \
-'Authorization: Bearer [access_token]'
-```
-
-curl:
-
-```shell
-curl -H 'Authorization: Bearer [access_token]' \
--v http://localhost:9091/library-server/users
-```
-
-Now, with our previous changes this request should succeed with an '200' OK status and return a list of users.
+Now it is time to test again using the well known request for the ToDo list.
+Try to change the validator and check if the validator works as expected and leads to an authentication error when validation fails for the expected audience.
 
 <hr>
 
-This ends lab 1. In the next [lab 2](../lab2) we will build the corresponding web client.
+This ends lab 1. In the next [lab 2](../lab2) we will see how to test for OAuth and JWT authentication.
 
 __<u>Important Note</u>__: If you could not finish part 1, then just use the
-project __lab1/library-server-complete__ to start into the next labs.
+project __lab1/final-jwt__ to start into the next labs or use the __lab2/initial__ project as new starting point.
 
 <hr>
 
-To continue with the OAuth2/OIDC client application please head over to [Lab 2](../lab2).
-
-
-
-Sending JwtAuthenticationToken [Principal=org.springframework.security.oauth2.jwt.Jwt@9dd3cf4a, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=127.0.0.1, SessionId=null], Granted Authorities=[SCOPE_openid, SCOPE_profile, SCOPE_email]] to access denied handler since access is denied
+To continue with testing the OAuth2/OIDC resource server application please head over to [Lab 2](../lab2).

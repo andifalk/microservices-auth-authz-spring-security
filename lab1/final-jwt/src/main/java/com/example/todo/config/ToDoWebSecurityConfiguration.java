@@ -1,9 +1,11 @@
 package com.example.todo.config;
 
+import com.example.todo.security.AudienceValidator;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.info.InfoEndpoint;
 import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusScrapeEndpoint;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
@@ -11,6 +13,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -108,6 +116,24 @@ public class ToDoWebSecurityConfiguration {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         return jwtAuthenticationConverter;
+    }
+
+    @Bean
+    JwtDecoder jwtDecoder(OAuth2ResourceServerProperties oAuth2ResourceServerProperties) {
+        NimbusJwtDecoder jwtDecoder =
+                NimbusJwtDecoder.withJwkSetUri(oAuth2ResourceServerProperties.getJwt().getJwkSetUri())
+                        .build();
+
+        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator();
+        OAuth2TokenValidator<Jwt> withIssuer =
+                JwtValidators.createDefaultWithIssuer(
+                        "http://localhost:9000");
+        OAuth2TokenValidator<Jwt> withAudience =
+                new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
+
+        jwtDecoder.setJwtValidator(withAudience);
+
+        return jwtDecoder;
     }
 
 }
