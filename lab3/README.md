@@ -3,6 +3,11 @@
 In the first lab we extended an existing Microservice to an OAuth 2.0 and OpenID Connect 1.0 compliant Resource Server.
 Target of this lab is to add another Microservice from the Microservice we extended in lab 1.
 
+As already seen in the architecture introduction, there ia also a further Microservice in the picture that is
+called by the already existing Microservice of lab 1.
+
+![Workshop Architecture](../docs/images/demo-architecture.png)
+
 ## Learning Targets
 
 In this lab we will add functionality to call another Microservice (resource server) with propagating the JWT.

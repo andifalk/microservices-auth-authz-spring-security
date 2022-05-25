@@ -55,238 +55,309 @@ Please start this lab with project located in _lab2/initial_.
 Open the existing class _ToDoRestControllerIntegrationTest_ and add the missing parts.
 
 ```java
-package com.example.library.server.api;
+package com.example.todo.api;
 
-import com.example.library.server.DataInitializer;
-import com.example.library.server.api.resource.BookResource;
+import com.example.todo.DataInitializer;
+import com.example.todo.entity.ToDoItemEntity;
+import com.example.todo.entity.ToDoItemEntityRepository;
+import com.example.todo.service.ToDoItem;
+import com.example.todo.service.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.h2.H2ConsoleProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.util.Collections;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
-import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
-import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
-import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
-import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest
-@DirtiesContext
-@DisplayName("Verify book api")
-class BookApiJwtAuthorizationTest {
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class ToDoRestControllerIntegrationTest {
 
-  @Autowired private WebApplicationContext context;
+    private static final UUID TODO_ITEM_IDENTIFIER = UUID.randomUUID();
 
-  private MockMvc mockMvc;
+    @Autowired
+    private WebApplicationContext context;
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
-  @BeforeEach
-  void setup() {
-    this.mockMvc =
-        MockMvcBuilders.webAppContextSetup(context)
-            .apply(springSecurity())
-            .build();
-  }
+    @MockBean
+    private ToDoItemEntityRepository toDoItemEntityRepository;
 
-  @DisplayName("can authorize to")
-  @Nested
-  class CanAuthorize {
+    @SuppressWarnings("unused")
+    @MockBean
+    private H2ConsoleProperties h2ConsoleProperties;
 
-    @Test
-    @DisplayName("get list of books")
-    void verifyGetBooks() throws Exception {
+    private MockMvc mvc;
 
-      mockMvc.perform(get("/books").with(jwt())).andExpect(status().isOk());
+    @BeforeEach
+    public void setup() {
+        mvc = MockMvcBuilders
+                .webAppContextSetup(context)
+                //.apply(springSecurity())
+                .build();
     }
 
-    @Test
-    @DisplayName("get single book")
-    void verifyGetBook() throws Exception {
+    @Disabled("Not running successfully without authentication")
+    @DisplayName("Retrieving ToDo items for users with different roles")
+    @Nested
+    class FindAllToDos {
 
-      Jwt jwt =
-          Jwt.withTokenValue("token")
-              .header("alg", "none")
-              .claim("sub", "bwayne")
-              .claim("groups", new String[] {"library_user"})
-              .build();
+        @DisplayName("returns all todo items for Admin")
+        @Test
+        void findAllToDosForAdmin() throws Exception {
+            ToDoItemEntity toDoItem1 = getToDoItemEntity(UUID.fromString(DataInitializer.WAYNE_ID));
+            ToDoItemEntity toDoItem2 = getToDoItemEntity(UUID.fromString(DataInitializer.KENT_ID));
+            when(toDoItemEntityRepository.findAllByUserIdentifier(any())).thenReturn(List.of(toDoItem1));
+            when(toDoItemEntityRepository.findAll()).thenReturn(List.of(toDoItem1, toDoItem2));
 
-      mockMvc
-          .perform(
-              get("/books/{bookId}", DataInitializer.BOOK_CLEAN_CODE_IDENTIFIER).with(jwt(jwt)))
-          .andExpect(status().isOk());
+            mvc.perform(
+                            get("/api/todos")
+                                    .param("user", DataInitializer.PARKER_ID))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(2));
+            verify(toDoItemEntityRepository).findAll();
+            verify(toDoItemEntityRepository, never()).findAllByUserIdentifier(any());
+        }
+
+        @DisplayName("returns only items for user")
+        @Test
+        void findAllToDosForStandardUser() throws Exception {
+            ToDoItemEntity toDoItem1 = getToDoItemEntity(UUID.fromString(DataInitializer.WAYNE_ID));
+            ToDoItemEntity toDoItem2 = getToDoItemEntity(UUID.fromString(DataInitializer.KENT_ID));
+            when(toDoItemEntityRepository.findAllByUserIdentifier(any())).thenReturn(List.of(toDoItem1));
+            when(toDoItemEntityRepository.findAll()).thenReturn(List.of(toDoItem1, toDoItem2));
+
+            mvc.perform(
+                            get("/api/todos")
+                                    .param("user", DataInitializer.WAYNE_ID))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(1));
+            verify(toDoItemEntityRepository, never()).findAll();
+            verify(toDoItemEntityRepository).findAllByUserIdentifier(any());
+        }
     }
 
-    @Test
-    @DisplayName("delete a book")
-    void verifyDeleteBook() throws Exception {
-      mockMvc
-          .perform(
-              delete("/books/{bookId}", DataInitializer.BOOK_DEVOPS_IDENTIFIER)
-                  .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_LIBRARY_CURATOR"))))
-          .andExpect(status().isNoContent());
+    @Disabled("Not running successfully without authentication")
+    @DisplayName("Retrieving all ToDos for a user")
+    @Nested
+    class FindAllToDosForUser {
+        @DisplayName("is successful")
+        @Test
+        void findAllToDosForUser() throws Exception {
+            User user = getBruceWayne();
+            ToDoItemEntity toDoItem = getToDoItemEntity(UUID.fromString(DataInitializer.WAYNE_ID));
+            when(toDoItemEntityRepository.findAllByUserIdentifier(any())).thenReturn(List.of(toDoItem));
+
+            mvc.perform(
+                            get("/api/todos")
+                                    .param("user", DataInitializer.WAYNE_ID))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(content().json(
+                            "[{\"identifier\":\"" + toDoItem.getIdentifier() + "\",\"title\":\"mytodo\"," +
+                                    "\"description\":\"todo description\"," +
+                                    "\"userIdentifier\":\"" + user.getIdentifier() + "\"}]"
+                    ));
+        }
+
+        @DisplayName("fails when getting items for another user")
+        @Test
+        void findAllToDosForAnotherUser() throws Exception {
+            ToDoItemEntity toDoItem = getToDoItemEntity(UUID.fromString(DataInitializer.KENT_ID));
+            when(toDoItemEntityRepository.findAllByUserIdentifier(any())).thenReturn(List.of(toDoItem));
+
+            mvc.perform(
+                            get("/api/todos")
+                                    .param("user", DataInitializer.KENT_ID))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @DisplayName("fails when unauthenticated")
+        @Test
+        void findAllForUserUnauthorized() throws Exception {
+            mvc.perform(
+                            get("/api/todos")
+                                    .param("user", DataInitializer.WAYNE_ID))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @DisplayName("fails when unauthorized")
+        @Test
+        void findAllToDosForUserForbidden() throws Exception {
+            mvc.perform(
+                            get("/api/todos")
+                                    .param("user", DataInitializer.WAYNE_ID))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
     }
 
-    @Test
-    @DisplayName("create a new book")
-    void verifyCreateBook() throws Exception {
+    @Disabled("Not running successfully without authentication")
+    @DisplayName("Retrieving one ToDo for a user")
+    @Nested
+    class FindOneToDoForUser {
+        @DisplayName("is successful")
+        @Test
+        void findOneToDoForUser() throws Exception {
+            User user = getBruceWayne();
+            ToDoItemEntity toDoItem = getToDoItemEntity(UUID.fromString(DataInitializer.WAYNE_ID));
+            when(toDoItemEntityRepository.findOneByIdentifierAndUserIdentifier(any(), any()))
+                    .thenReturn(Optional.of(toDoItem));
+            mvc.perform(
+                            get("/api/todos/{todoIdentifier}", toDoItem.getIdentifier().toString()))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(content().json(
+                            "{\"identifier\":\"" + toDoItem.getIdentifier() + "\",\"title\":\"mytodo\"," +
+                                    "\"description\":\"todo description\"," +
+                                    "\"userIdentifier\":\"" + user.getIdentifier() + "\"}"
+                    ));
+        }
 
-      BookResource bookResource =
-          new BookResource(
-              UUID.randomUUID(),
-              "1234566",
-              "title",
-              "description",
-              Collections.singletonList("Author"),
-              false,
-              null);
+        @DisplayName("fails for getting item of another user")
+        @Test
+        void findOneToDoForAnotherUser() throws Exception {
+            ToDoItemEntity toDoItem = getToDoItemEntity(UUID.fromString(DataInitializer.KENT_ID));
+            when(toDoItemEntityRepository.findOneByIdentifierAndUserIdentifier(any(), any()))
+                    .thenReturn(Optional.empty());
+            mvc.perform(
+                            get("/api/todos/{todoIdentifier}", toDoItem.getIdentifier().toString()))
+                    .andDo(print())
+                    .andExpect(status().isNotFound());
+        }
 
-      mockMvc
-          .perform(
-              post("/books")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content(objectMapper.writeValueAsString(bookResource))
-                  .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_LIBRARY_CURATOR"))))
-          .andExpect(status().isCreated());
+        @DisplayName("fails when unauthenticated")
+        @Test
+        void findOneToDoForUserUnauthorized() throws Exception {
+            mvc.perform(
+                            get("/api/todos/{todoIdentifier}", UUID.randomUUID().toString()))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @DisplayName("fails when unauthorized")
+        @Test
+        void findOneToDoForUserForbidden() throws Exception {
+            mvc.perform(
+                            get("/api/todos/{todoIdentifier}", UUID.randomUUID().toString()))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
+
     }
 
-    @Test
-    @DisplayName("update a book")
-    void verifyUpdateBook() throws Exception {
+    @Disabled("Not running successfully without authentication")
+    @DisplayName("Creating a new ToDo")
+    @Nested
+    class CreateToDo {
+        @DisplayName("is successful")
+        @Test
+        void createToDoItem() throws Exception {
+            User user = getBruceWayne();
+            ToDoItem toDoItem = getToDoItem(UUID.fromString(DataInitializer.WAYNE_ID));
+            ToDoItemEntity toDoItemEntity = getToDoItemEntity(UUID.fromString(DataInitializer.WAYNE_ID));
+            when(toDoItemEntityRepository.save(any(ToDoItemEntity.class)))
+                    .thenReturn(toDoItemEntity);
+            mvc.perform(
+                            post("/api/todos")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(objectMapper.writeValueAsString(toDoItem)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(content().json(
+                            "{\"identifier\":\"" + toDoItem.getIdentifier() + "\",\"title\":\"mytodo\"," +
+                                    "\"description\":\"todo description\"," +
+                                    "\"userIdentifier\":\"" + user.getIdentifier() + "\"}"
+                    ));
+        }
 
-      BookResource bookResource =
-          new BookResource(
-              DataInitializer.BOOK_SPRING_ACTION_IDENTIFIER,
-              "9781617291203",
-              "Spring in Action: Covers Spring 5",
-              "Spring in Action, Fifth Edition is a hands-on guide to the Spring Framework, "
-                  + "updated for version 4. It covers the latest features, tools, and practices "
-                  + "including Spring MVC, REST, Security, Web Flow, and more. You'll move between "
-                  + "short snippets and an ongoing example as you learn to build simple and efficient "
-                  + "J2EE applications. Author Craig Walls has a special knack for crisp and "
-                  + "entertaining examples that zoom in on the features and techniques you really need.",
-              Collections.singletonList("Craig Walls"),
-              false,
-              null);
+        @DisplayName("fails when unauthenticated")
+        @Test
+        void createToDoItemUnauthorized() throws Exception {
+            ToDoItem toDoItem = getToDoItem(UUID.fromString(DataInitializer.WAYNE_ID));
+            mvc.perform(
+                            post("/api/todos")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(objectMapper.writeValueAsString(toDoItem)))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
+        }
 
-      mockMvc
-          .perform(
-              put("/books/{bookId}", DataInitializer.BOOK_SPRING_ACTION_IDENTIFIER)
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content(objectMapper.writeValueAsString(bookResource))
-                  .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_LIBRARY_CURATOR"))))
-          .andExpect(status().isOk());
-    }
-  }
-
-  @DisplayName("cannot authorize to")
-  @Nested
-  class CannotAuthorize {
-
-    @Test
-    @DisplayName("get list of books")
-    void verifyGetBooksUnAuthenticated() throws Exception {
-
-      mockMvc.perform(get("/books")).andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("get single book")
-    void verifyGetBook() throws Exception {
-
-      mockMvc
-              .perform(
-                      get("/books/{bookId}",
-                              DataInitializer.BOOK_CLEAN_CODE_IDENTIFIER))
-              .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("delete a book")
-    void verifyDeleteBookUnAuthorized() throws Exception {
-      mockMvc
-              .perform(
-                      delete("/books/{bookId}", DataInitializer.BOOK_DEVOPS_IDENTIFIER))
-              .andExpect(status().isUnauthorized());
+        @DisplayName("fails when unauthorized")
+        @Test
+        void createToDoItemForbidden() throws Exception {
+            ToDoItem toDoItem = getToDoItem(UUID.fromString(DataInitializer.WAYNE_ID));
+            mvc.perform(
+                            post("/api/todos")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(objectMapper.writeValueAsString(toDoItem)))
+                    .andDo(print())
+                    .andExpect(status().isForbidden());
+        }
     }
 
-    @Test
-    @DisplayName("delete a book with wrong role")
-    void verifyDeleteBookWrongRole() throws Exception {
-      mockMvc
-              .perform(
-                      delete("/books/{bookId}", DataInitializer.BOOK_DEVOPS_IDENTIFIER)
-                              .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_LIBRARY_USER"))))
-              .andExpect(status().isForbidden());
+    private User getBruceWayne() {
+        return new User(
+                UUID.fromString(DataInitializer.WAYNE_ID),
+                "Bruce", "Wayne",
+                "bwayne", "bruce.wayne@example.com", Set.of("USER"));
     }
 
-    @Test
-    @DisplayName("create a new book")
-    void verifyCreateBookUnAuthorized() throws Exception {
-
-      BookResource bookResource =
-              new BookResource(
-                      UUID.randomUUID(),
-                      "1234566",
-                      "title",
-                      "description",
-                      Collections.singletonList("Author"),
-                      false,
-                      null);
-
-      mockMvc
-              .perform(
-                      post("/books")
-                              .contentType(MediaType.APPLICATION_JSON)
-                              .content(objectMapper.writeValueAsString(bookResource)))
-              .andExpect(status().isUnauthorized());
+    private ToDoItem getToDoItem(UUID userIdentifier) {
+        return new ToDoItem(TODO_ITEM_IDENTIFIER, "mytodo",
+                "todo description", null, userIdentifier);
     }
 
-    @Test
-    @DisplayName("update a book")
-    void verifyUpdateBookUnAuthorized() throws Exception {
-
-      BookResource bookResource =
-              new BookResource(
-                      DataInitializer.BOOK_SPRING_ACTION_IDENTIFIER,
-                      "9781617291203",
-                      "Spring in Action: Covers Spring 5",
-                      "Spring in Action, Fifth Edition is a hands-on guide to the Spring Framework, "
-                              + "updated for version 4. It covers the latest features, tools, and practices "
-                              + "including Spring MVC, REST, Security, Web Flow, and more. You'll move between "
-                              + "short snippets and an ongoing example as you learn to build simple and efficient "
-                              + "J2EE applications. Author Craig Walls has a special knack for crisp and "
-                              + "entertaining examples that zoom in on the features and techniques you really need.",
-                      Collections.singletonList("Craig Walls"),
-                      false,
-                      null);
-
-      mockMvc
-              .perform(
-                      put("/books/{bookId}", DataInitializer.BOOK_SPRING_ACTION_IDENTIFIER)
-                              .contentType(MediaType.APPLICATION_JSON)
-                              .content(objectMapper.writeValueAsString(bookResource)))
-              .andExpect(status().isUnauthorized());
+    private ToDoItemEntity getToDoItemEntity(UUID userIdentifier) {
+        ToDoItemEntity toDoItemEntity = new ToDoItemEntity(TODO_ITEM_IDENTIFIER, "mytodo",
+                "todo description", null, userIdentifier);
+        ReflectionTestUtils.setField(toDoItemEntity, "id", 1L);
+        return toDoItemEntity;
     }
-  }
+
+    private Jwt getJwt(String userIdentifier, List<String> roles) {
+        return Jwt.withTokenValue("token")
+                .header("alg", "none")
+                .claim("sub", userIdentifier)
+                .claim("roles", roles)
+                .build();
+    }
+
+    static class JwtAuthzConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
+        @Override
+        public Collection<GrantedAuthority> convert(Jwt jwt) {
+            return jwt.getClaimAsStringList("roles")
+                    .stream()
+                    .map(r -> "ROLE_" + r)
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toList());
+        }
+    }
+
 }
 ```
 
