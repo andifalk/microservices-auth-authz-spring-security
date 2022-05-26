@@ -3,6 +3,7 @@
 This is the getting started lab for testing the simple OAuth 2.0 grants of [OAuth 2.0 Authorization](https://www.rfc-editor.org/rfc/rfc6749.html):
 
 * Client Credentials
+* Resource Owner Password Credentials
 * Authorization Code 
 * Authorization Code with PKCE
 
@@ -77,13 +78,13 @@ Now click on the button _Get New Access Token_, this will open the following dia
 ![Postman Client Credentials](images/postman_client_credentials.png)
 
 Here, select _Client Credentials_ in the _Grant Type_ drop down box, then fill in the details of the Postman view shown 
-using the required data above and click _Request Token_.
+using the required data in the table above and click _Request Token_.
 
 Then you should see the response in Postman:
 
 ![Postman Result](images/postman_access_token_result.png)
 
-## RO Password Credentials Grant
+## Resource Owner Password Credentials Grant
 
 The next grant type we will only shortly talk about here is the [OAuth 2.0 Resource Owner Password Credentials Grant](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.3).
 
@@ -112,10 +113,7 @@ the user to manually log in using a web form.
 
 So, for this grant flow you have two possibilities:
 1. Use Postman (Postman is able to completely manage this grant)
-2. Use the web browser and then _curl_ or _httpie_: 
-  * First create the authorization request and paste it as url to the web browser
-  * Grab the authorization code from the redirect request url from the web browser
-  * Then create the token request using _curl_ or _httpie_  
+2. Use the test client in [test-client](../../test-client) 
 
 The required parameters for the authorization code grant are shown here:
 
@@ -141,7 +139,7 @@ Now click on the button _Get New Access Token_, this will open the following dia
 ![Postman AuthCode](images/postman_auth_code.png)
 
 Here, select _Authorization Code_ in the _Grant Type_ drop down box, then fill in the details of the Postman view shown 
-using the required data above and click _Request Token_. You may also switch on _Authorize using browser_ check box, then
+using the required data from the table above and click _Request Token_. You may also switch on _Authorize using browser_ check box, then
 Postman uses your web browser for the redirects instead of its own window.
 
 Then you should see the response in Postman:
