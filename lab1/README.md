@@ -24,7 +24,7 @@ starting with the first hands-on lab (especially the server side parts)__.
 
 In this lab we will build an OAuth2/OIDC compliant resource server.
 
-![Resource Server](images/resource_server.png)
+![Resource_Server](images/resource_server.png)
 
 We will use Spring Authorization Server as identity provider.  
 Please again make sure you have set up Spring Authorization Server as described in [setup](../setup/README.md)
