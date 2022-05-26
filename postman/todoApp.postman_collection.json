@@ -1,0 +1,656 @@
+{
+	"info": {
+		"_postman_id": "7a586702-cc4c-4b3b-a149-d57f00b2984c",
+		"name": "ToDoApp",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "7267364"
+	},
+	"item": [
+		{
+			"name": "Basic Auth",
+			"item": [
+				{
+					"name": "All To Do items for Bruce Wayne",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos?user=c52bf7db-db55-4f89-ac53-82b40e8c57c2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos"
+							],
+							"query": [
+								{
+									"key": "user",
+									"value": "c52bf7db-db55-4f89-ac53-82b40e8c57c2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new To Do item for Bruce Wayne",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"mytodo\",\n  \"description\": \"My new to do item\",\n  \"dueDate\": \"2025-12-21\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:9090/api/todos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "All To Do items for Clark Kent",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos?user=52a14872-ba6b-488f-aa4d-453b11f9ddce",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos"
+							],
+							"query": [
+								{
+									"key": "user",
+									"value": "52a14872-ba6b-488f-aa4d-453b11f9ddce"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "All To Do items for Peter Parker as Admin",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos?user=3a73ef49-c671-4d66-b6f2-7725ccde5c2b",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos"
+							],
+							"query": [
+								{
+									"key": "user",
+									"value": "3a73ef49-c671-4d66-b6f2-7725ccde5c2b"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get To Do item for Bruce Wayne",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos/6cbe3232-6250-4ea9-9812-4788a6880e2f",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos",
+								"6cbe3232-6250-4ea9-9812-4788a6880e2f"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get To Do item for Clark Kent",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos/28613d35-4e0b-4b33-b977-9098a828a580",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos",
+								"28613d35-4e0b-4b33-b977-9098a828a580"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user Bruce Wayne",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/users/c52bf7db-db55-4f89-ac53-82b40e8c57c2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"users",
+								"c52bf7db-db55-4f89-ac53-82b40e8c57c2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get currently authenticated user",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/users/me",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a new user",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Max\",\n  \"lastName\": \"Muster\",\n  \"username\": \"mmuster\",\n  \"email\": \"max.muster@example.com\",\n  \"password\": \"secret\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:9090/api/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"users"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "basic",
+				"basic": [
+					{
+						"key": "password",
+						"value": "wayne",
+						"type": "string"
+					},
+					{
+						"key": "username",
+						"value": "bwayne",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Bearer Token Auth",
+			"item": [
+				{
+					"name": "All To Do items for Bruce Wayne",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos?user=c52bf7db-db55-4f89-ac53-82b40e8c57c2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos"
+							],
+							"query": [
+								{
+									"key": "user",
+									"value": "c52bf7db-db55-4f89-ac53-82b40e8c57c2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new To Do item for Bruce Wayne",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"mytodo\",\n  \"description\": \"My new to do item\",\n  \"dueDate\": \"2025-12-21\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:9090/api/todos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "All To Do items for Clark Kent",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos?user=52a14872-ba6b-488f-aa4d-453b11f9ddce",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos"
+							],
+							"query": [
+								{
+									"key": "user",
+									"value": "52a14872-ba6b-488f-aa4d-453b11f9ddce"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "All To Do items for Peter Parker as Admin",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos?user=3a73ef49-c671-4d66-b6f2-7725ccde5c2b",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos"
+							],
+							"query": [
+								{
+									"key": "user",
+									"value": "3a73ef49-c671-4d66-b6f2-7725ccde5c2b"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get To Do item for Bruce Wayne",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos/6cbe3232-6250-4ea9-9812-4788a6880e2f",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos",
+								"6cbe3232-6250-4ea9-9812-4788a6880e2f"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get To Do item for Clark Kent",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos/28613d35-4e0b-4b33-b977-9098a828a580",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos",
+								"28613d35-4e0b-4b33-b977-9098a828a580"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Suggest a To Do item (Other service)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9091/api/suggest",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9091",
+							"path": [
+								"api",
+								"suggest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Suggest a To Do item",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/todos/suggest",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"todos",
+								"suggest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user Bruce Wayne",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/users/c52bf7db-db55-4f89-ac53-82b40e8c57c2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"users",
+								"c52bf7db-db55-4f89-ac53-82b40e8c57c2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get currently authenticated user",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/api/users/me",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a new user",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Max\",\n  \"lastName\": \"Muster\",\n  \"username\": \"mmuster\",\n  \"email\": \"max.muster@example.com\",\n  \"password\": \"secret\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:9090/api/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"api",
+								"users"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "oauth2",
+				"oauth2": [
+					{
+						"key": "clientId",
+						"value": "demo-client-pkce",
+						"type": "string"
+					},
+					{
+						"key": "client_authentication",
+						"value": "body",
+						"type": "string"
+					},
+					{
+						"key": "useBrowser",
+						"value": true,
+						"type": "boolean"
+					},
+					{
+						"key": "redirect_uri",
+						"value": "http://127.0.0.1:9095/callback",
+						"type": "string"
+					},
+					{
+						"key": "state",
+						"value": "12345",
+						"type": "string"
+					},
+					{
+						"key": "scope",
+						"value": "openid",
+						"type": "string"
+					},
+					{
+						"key": "accessTokenUrl",
+						"value": "http://localhost:9000/oauth2/token",
+						"type": "string"
+					},
+					{
+						"key": "authUrl",
+						"value": "http://localhost:9000/oauth2/authorize",
+						"type": "string"
+					},
+					{
+						"key": "tokenName",
+						"value": "jwt",
+						"type": "string"
+					},
+					{
+						"key": "grant_type",
+						"value": "authorization_code_with_pkce",
+						"type": "string"
+					},
+					{
+						"key": "addTokenTo",
+						"value": "header",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	]
+}
