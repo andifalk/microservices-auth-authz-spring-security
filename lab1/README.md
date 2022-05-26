@@ -19,10 +19,11 @@ starting with the first hands-on lab (especially the server side parts)__.
     * [Step 3: Implement a custom JWT authorities mapper](#step-3-custom-jwt-authorities-mapper)
     * [(Optional) Step 4: Implement a custom JWT converter](#optional-step-4-custom-jwt-converter)
     * [(Optional) Step 5: An additional JWT validator for 'audience' claim](#optional-step-5-jwt-validation-for-the-audience-claim)
+    * [Opaque Tokens](#opaque-tokens)
 
 ## Learning Targets
 
-In this lab we will build an OAuth2/OIDC compliant resource server.
+In this lab we will build an OAuth2/OIDC compliant resource server and look at various mapping options for converting the JWT contents into spring security native objects for authentication and authorization.
 
 ![Resource_Server](images/resource_server.png)
 
@@ -34,6 +35,7 @@ In lab 1 you will learn how to:
 1. Implement a basic resource server requiring bearer token authentication using JSON web tokens (JWT)
 2. Customize the resource server with __user & authorities mapping__
 3. Implement additional recommended validation of the _audience_ claim of the access token
+4. Have a small look into alternative token type: Opaque tokens
 
 ## Folder Contents
 
@@ -62,11 +64,11 @@ There are two target user roles for this application:
 * USER: Standard user who can list and add todo items
 * ADMIN: An administrator user who can list, add or remove users and can see all todo items (of all users)
 
-| Username | Email                    | Password | Role   |
-| ---------| ------------------------ | -------- |--------|
-| bwayne   | bruce.wayne@example.com  | wayne    | USER   |
-| ckent    | clark.kent@example.com   | kent     | USER   |
-| pparker  | peter.parker@example.com | parker   | ADMIN  |
+| Username | Email                    | Identifier                            | Password  | Role   |
+| ---------| ------------------------ |---------------------------------------|-----------|--------|
+| bwayne   | bruce.wayne@example.com  | c52bf7db-db55-4f89-ac53-82b40e8c57c2  | wayne     | USER   |
+| ckent    | clark.kent@example.com   | 52a14872-ba6b-488f-aa4d-453b11f9ddce  | kent      | USER   |
+| pparker  | peter.parker@example.com | 3a73ef49-c671-4d66-b6f2-7725ccde5c2b  | parker    | ADMIN  |
 
 To test if the application works as expected, either
 
@@ -208,6 +210,7 @@ Then you should see the public discovery information that Spring Authorization S
 For configuring a resource server the important entries are _issuer-uri_ and _jwk-set-uri_.
 For a resource server only the correct validation of a JWT token is significant, so it only needs to know where to load
 the public key from to validate the token signature.
+In case of the Spring Authorization Server it is the entry for ```"jwks_uri": "http://localhost:9000/oauth2/jwks"```.
 
 If you specify the _spring.security.oauth2.resourceserver.jwt.issuer-uri_ instead then when starting the server application 
 it reads the _jwk-set-uri_ from the provided openid configuration. If you do not want to check this on application start just use the _jwk-set-uri_ property.
@@ -255,8 +258,7 @@ Usually this configuration would be sufficient to configure a resource server (b
 As there is already a security configuration for basic authentication in place (_com.example.toto.config.ToDoWebSecurityConfiguration_),
 this disables the spring boot autoconfiguration.
 
-__Please note__: The security configuration already uses the new approach of configuring beans of type _SecurityFilterChain_ instead of extending 
-_WebSecurityConfigurerAdapter_ class.
+__Please note__: The security configuration already uses the new approach of configuring beans of type _SecurityFilterChain_ instead of extending _WebSecurityConfigurerAdapter_ class.
 
 So we have to change the existing security configuration to enable token based authentication instead of basic authentication.
 We also want to make sure, our resource server is working with stateless token authentication, so we have to configure stateless
@@ -324,11 +326,158 @@ Also, the _PasswordEncoder_ bean defined in this configuration is not required a
 in our resource server, so you can also delete that bean definition. Please make sure that you also remove the _PasswordEncoder_ 
 from the _com.example.todo.DataInitializer_ class, just replace the encoder calls here with the default string _"n/a"_ as the password 
 is not relevant anymore.
-So instead of ```passwordEncoder.encode("wayne")``` just replace it with ```"n/a"```.
+So instead of ```passwordEncoder.encode("wayne")``` just replace it with ```"n/a"``` or remove the password attribute completely from
+the _ToDoItemEntity_ and _ToDoItem_ and remove it as constructor parameter for _User_ in the _DataInitializer_ class.
 
-<hr>
+### Step 2: Change the Authenticated Principal
 
-### Step 2: Run and test basic resource server
+In the following table you can see the corresponding spring security core classes like _Authentication_ and _Principle_ 
+that are used for the different authentication types.
+
+| Authentication Type   | AuthenticationToken                 | Principal (@AuthenticationPrincipal)                                  |
+|-----------------------|-------------------------------------|-----------------------------------------------------------------------|
+| Basic Authentication  | UsernamePasswordAuthenticationToken | com.example.todo.service.User (UserDetails)                           |
+| Bearer Token (JWT)    | JwtAuthenticationToken              | org.springframework.security.oauth2.jwt.Jwt                           |
+| Bearer Token (Opaque) | BearerTokenAuthentication           | org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal |
+
+After changing the authentication mechanism to JWT bearer tokens it is also required to replace the existing
+_User_ principle annotated with _@AuthenticationPrincipal_ in the rest controllers _ToDoRestController_ and _UserRestController_.
+
+Please replace all references to _@AuthenticationPrincipal User authenticatedUser_ in the _ToDoRestController_ with
+_@AuthenticationPrincipal Jwt authenticatedUser_. Then do the same for the other rest controller _UserRestController_ class.
+
+ToDoRestController:
+
+```
+package com.example.todo.api;
+
+import com.example.todo.DataInitializer;
+import com.example.todo.service.ToDoItem;
+import com.example.todo.service.ToDoService;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/todos")
+@Validated
+@OpenAPIDefinition(tags = @Tag(name = "todo"), info = @Info(title = "ToDo", description = "API for ToDo Items", version = "1"), security = {@SecurityRequirement(name = "bearer")})
+public class ToDoRestController {
+
+    private final ToDoService toDoService;
+
+    public ToDoRestController(ToDoService toDoService) {
+        this.toDoService = toDoService;
+    }
+
+    @Operation(tags = "todo", summary = "ToDo API", description = "Finds all ToDo items for given user identifier", parameters = @Parameter(name = "user", example = DataInitializer.WAYNE_ID))
+    @GetMapping
+    public List<ToDoItem> findAllForUser(@RequestParam(name = "user") UUID userIdentifier, @AuthenticationPrincipal Jwt authenticatedUser) {
+        if (authenticatedUser.getClaimAsStringList("roles").contains("ADMIN")) {
+            return toDoService.findAll();
+        } else {
+            return toDoService.findAllForUser(userIdentifier, UUID.fromString(authenticatedUser.getSubject()));
+        }
+    }
+
+    @Operation(tags = "todo", summary = "ToDo API", description = "Finds one ToDo item for given todo item identifier")
+    @GetMapping("/{todoItemIdentifier}")
+    public ResponseEntity<ToDoItem> findOneForUser(
+            @PathVariable("todoItemIdentifier") UUID todoItemIdentifier,
+            @AuthenticationPrincipal Jwt authenticatedUser) {
+        return toDoService.findToDoItemForUser(todoItemIdentifier, UUID.fromString(authenticatedUser.getSubject()))
+                .map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    }
+
+    @Operation(tags = "todo", summary = "ToDo API", description = "Creates a new ToDo item for current user")
+    @PostMapping
+    public ToDoItem create(@RequestBody @Valid ToDoItem toDoItem, @AuthenticationPrincipal Jwt authenticatedUser) {
+        toDoItem.setUserIdentifier(UUID.fromString(authenticatedUser.getSubject()));
+        return toDoService.create(toDoItem);
+    }
+}
+```
+
+UserRestController:
+
+```
+package com.example.todo.api;
+
+import com.example.todo.service.CreateUser;
+import com.example.todo.service.User;
+import com.example.todo.service.UserService;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.List;
+import java.util.UUID;
+
+import static org.springframework.http.HttpStatus.CREATED;
+
+@RestController
+@RequestMapping("/api/users")
+@Validated
+@OpenAPIDefinition(tags = @Tag(name = "user"), info = @Info(title = "User", description = "API for Users", version = "1"), security = {@SecurityRequirement(name = "bearer")})
+public class UserRestController {
+
+    private final UserService userService;
+
+    public UserRestController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @Operation(tags = "user", summary = "User API", description = "Finds all registered users")
+    @GetMapping
+    public List<User> allUsers() {
+        return userService.findAll();
+    }
+
+    @Operation(tags = "user", summary = "User API", description = "Finds user specified by user identifier")
+    @GetMapping("/{userIdentifier}")
+    public ResponseEntity<User> findUser(@PathVariable UUID userIdentifier) {
+        return userService.findOneByIdentifier(userIdentifier).map(
+                ResponseEntity::ok
+        ).orElse(ResponseEntity.notFound().build());
+    }
+
+    @Operation(tags = "user", summary = "User API", description = "Retrieves the currently authenticated user")
+    @GetMapping("/me")
+    public String getAuthenticatedUser(@AuthenticationPrincipal Jwt authenticatedUser) {
+        return String.format("%s %s", authenticatedUser.getClaimAsString("given_name"), authenticatedUser.getClaimAsString("family_name"));
+    }
+
+    @Operation(tags = "user", summary = "User API", description = "Creates a new user")
+    @PostMapping
+    @ResponseStatus(CREATED)
+    public User createUser(@RequestBody @Valid CreateUser user) {
+        return userService.create(user);
+    }
+
+}
+```
+
+### Step 3: Run and test basic resource server
 
 Now it should be possible to re-start the reconfigured application _com.example.todo.ToDoApplicationLab1Initial_.
 Or just use the `gradlew bootRun` command.
@@ -651,7 +800,7 @@ Let's start with option 2.
 
 <hr>
 
-### Step 3: Custom JWT authorities mapper
+### Step 4: Custom JWT authorities mapper
 
 In this step we would like to add a custom mapping for authorizations, so we can get rid of the automatic _SCOPE_xx_ authorities back again to
 ROLE_xx authorities.
@@ -702,7 +851,7 @@ The new bean above
 
 You can find this kind of solution in the corresponding final reference solution located in the [lab1/final-jwt](final-jwt) folder.
 
-### (Optional) Step 4: Custom JWT converter
+### (Optional) Step 5: Custom JWT converter
 
 The third option is the one with the most effort. Here we completely map token claim values int a _User_ object.
 
@@ -848,7 +997,7 @@ public class ToDoWebSecurityConfiguration {
 
 <hr>
 
-### (Optional) Step 5: JWT validation for the 'audience' claim
+### (Optional) Step 6: JWT validation for the 'audience' claim
 
 Implementing an additional custom token validator is quite easy, you just have to implement the
 provided interface _OAuth2TokenValidator_ and add your custom validator on top of the mandatory validators..
@@ -956,6 +1105,95 @@ For this just use the `gradlew bootRun` command.
 
 Now it is time to test again using the well known request for the ToDo list.
 Try to change the validator and check if the validator works as expected and leads to an authentication error when validation fails for the expected audience.
+
+## Opaque Tokens
+
+Changing the resource server to use opaque tokens for authentication is quite easy.
+
+Just replace the _jwt()_ reference in the _ToDoWebSecurityConfiguration_ by the _opaque()_ reference like this:
+
+```
+package com.example.todo.config;
+
+import com.example.todo.security.AudienceValidator;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.info.InfoEndpoint;
+import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusScrapeEndpoint;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.web.SecurityFilterChain;
+
+import static org.springframework.security.config.Customizer.withDefaults;
+
+@EnableWebSecurity
+public class ToDoWebSecurityConfiguration {
+
+    // ...
+    
+    /*
+     * Security configuration for user and todos Rest API.
+     */
+    @Bean
+    @Order(4)
+    public SecurityFilterChain api(HttpSecurity http) throws Exception {
+        http.mvcMatcher("/api/**")
+                .authorizeRequests()
+                .mvcMatchers("/api/users/me").hasAnyRole("USER", "ADMIN")
+                .mvcMatchers("/api/users/**").hasRole("ADMIN")
+                .anyRequest().hasAnyRole("USER", "ADMIN")
+                .and()
+                // only disable CSRF for demo purposes or when NOT using session cookies for auth
+                .csrf().disable()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .oauth2ResourceServer().opaqueToken(withDefaults());
+        return http.build();
+    }
+
+    // ...
+}
+```
+
+and then replace the jwt entries in the _application.yml_ by the new _opaquetoken_ entries:
+
+```
+spring:
+  application:
+    name: ToDoApp
+  datasource:
+    embedded-database-connection: h2
+    hikari:
+      jdbc-url: jdbc:h2:mem:todo
+  jpa:
+    open-in-view: false
+    generate-ddl: on
+    hibernate:
+      ddl-auto: create-drop
+  jackson:
+    default-property-inclusion: non_null
+  security:
+    oauth2:
+      resourceserver:
+        opaquetoken:
+          introspection-uri: http://localhost:9000/oauth2/introspect
+```
+
+And for testing please retrieve an opaque token from the Spring Authorization Server by switching the client_id to _demo-client-opaque_ (client_secret is still _secret_) or _demo-client-opaque-pkce_.
 
 <hr>
 
