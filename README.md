@@ -26,6 +26,8 @@ To follow the hands-on workshop please open the [workshop tutorial](https://andi
 
 For the hands-on workshop you will extend a provided sample application along with guided tutorials.
 
+You will need a customized version of the [Spring Authorization Server](https://github.com/spring-projects/spring-authorization-server) that you can get from [https://github.com/andifalk/custom-spring-authorization-server](https://github.com/andifalk/custom-spring-authorization-server)
+
 The components you will build (and use) look like this:
 
 ![Architecture](docs/images/demo-architecture.png)
