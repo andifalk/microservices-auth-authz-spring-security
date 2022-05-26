@@ -3,7 +3,8 @@
 This is the getting started lab for testing the simple OAuth 2.0 grants of [OAuth 2.0 Authorization](https://www.rfc-editor.org/rfc/rfc6749.html):
 
 * Client Credentials
-* Resource Owner Password
+* Authorization Code 
+* Authorization Code with PKCE
 
 As part of this we can also achieve the following targets:
 
@@ -11,7 +12,7 @@ As part of this we can also achieve the following targets:
 2. Get to know the tools to execute Http requests
   * Curl
   * Httpie
-  * Postman  
+  * Postman
 
 ## Run Authorization Server
 
@@ -31,7 +32,7 @@ The required parameters for the client credentials grant are shown here:
 | grant_type    | client_credentials                 |
 | client_id     | demo-client                        |
 | client_secret | secret                             |
-| scope         | openid email profile               |
+| scope         | openid                             |
 
 ### Curl
 
@@ -50,7 +51,7 @@ This should return a response similar to this one:
   "refresh_expires_in":1800,
   "refresh_token":"eyJhbGciOiJIUzI1N...",
   "token_type":"bearer",
-  "scope":"openid email profile"
+  "scope":"openid ..."
 }
 ```
 
@@ -84,72 +85,16 @@ Then you should see the response in Postman:
 
 ## RO Password Credentials Grant
 
-The next grant type we will evaluate here is the [OAuth 2.0 Resource Owner Password Credentials Grant](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.3).
+The next grant type we will only shortly talk about here is the [OAuth 2.0 Resource Owner Password Credentials Grant](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.3).
 
 ![Password Credentials](images/ro_password.png)
 
-The required parameters for the RO password credentials grant are shown here:
+As of OAuth 2.1 the password resource owner grant is being deprecated and removed from the standard.
+The Spring Authorization Server already follows the upcoming OAuth 2.1 standard and therefore does not support this grant flow.
 
-| Parameter     | Value                              |
-| --------------|------------------------------------|
-| token url     | http://localhost:9000/oauth2/token |
-| grant_type    | password                           |
-| client_id     | demo-client                        |
-| client_secret | secret                             |
-| scope         | openid email profile               |
-| username      | bwayne                             |
-| password      | wayne                              |
+So instead let's continue with the most common OAuth 2.1 authorization grant flow: The Authorization Code grant flow.
 
-### Curl
-
-To retrieve an access token using curl use the following command in a terminal:
-
-```curl
-curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=password&username=bwayne&password=wayne&client_id=demo-client&client_secret=secret" http://localhost:9000/oauth2/token
-```
-
-This should return a response similar to this one:
-
-```json
-{
-  "access_token":"eyJhbGciOiJSUzI1NiIsI...",
-  "expires_in":300,
-  "refresh_expires_in":1800,
-  "refresh_token":"eyJhbGciOiJIUzI1N...",
-  "token_type":"bearer",
-  "scope":"openid email profile"
-}
-```
-
-### Httpie
-
-To retrieve an access token using _httpie_ use the following command in a terminal:
-
-```httpie
-http --form POST http://localhost:9000/oauth2/token grant_type='password' username='bwayne' password='wayne' client_id='demo-client' client_secret='secret'
-```
-
-This should return a response similar to the one for curl.
-
-### Postman
-
-To get an access token via the client credentials grant using postman just create a new request (the request url is not important).
-Then switch to the _Authorization_ tab and select _OAuth 2.0_ in the _Type_ drop down box.
-
-![Postman Authorization](images/postman_authorization.png)
-
-Now click on the button _Get New Access Token_, this will open the following dialog.
-
-![Postman Password](images/postman_ro_password.png)
-
-Here, select _Password Credentials_ in the _Grant Type_ drop down box, then fill in the details of the Postman view shown 
-using the required data above and click _Request Token_.
-
-Then you should see the response in Postman:
-
-![Postman Result](images/postman_access_token_result.png)
-
-## Advanced: Authorization Code Grant
+## Authorization Code Grant
 
 The [authorization code grant](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.1) is the flow mostly used in today's applications adopting OAuth 2.0.
  
@@ -159,8 +104,10 @@ The [authorization code grant](https://www.rfc-editor.org/rfc/rfc6749.html#secti
    to the callback entry point provided by the client application 
 3. Now the client application sends a token request to the authorization server to exchange
    the authorization code into an access token
+
+![PKCE](images/authorization_code_schema.png)
    
-This grant cannot be performed completely in _curl_ or _httpie_ because of the interactive process of this grant flow requiring
+This grant cannot be performed in _curl_ or _httpie_ because of the interactive process of this grant flow requiring
 the user to manually log in using a web form.
 
 So, for this grant flow you have two possibilities:
@@ -169,7 +116,19 @@ So, for this grant flow you have two possibilities:
   * First create the authorization request and paste it as url to the web browser
   * Grab the authorization code from the redirect request url from the web browser
   * Then create the token request using _curl_ or _httpie_  
- 
+
+The required parameters for the authorization code grant are shown here:
+
+| Parameter         | Value                                  |
+|-------------------|----------------------------------------|
+| authorization url | http://localhost:9000/oauth2/authorize |
+| token url         | http://localhost:9000/oauth2/token     |
+| grant_type        | code                                   |
+| client_id         | demo-client                            |
+| client_secret     | secret                                 |
+| scope             | openid                                 |
+| redirect_uri      | http://127.0.0.1:9095/callback         |
+
 ### Postman
 
 To get an access token via the authorization code grant using postman just create a new request (the request url is not important).
@@ -188,34 +147,6 @@ Postman uses your web browser for the redirects instead of its own window.
 Then you should see the response in Postman:
 
 ![Postman Result](images/postman_access_token_result.png) 
- 
-
-### Curl
-
-To achieve the same using _curl_ first copy this request into the page url of your web browser:
-
-```uri
-http://localhost:9000/oauth2/authorize?response_type=code&client_id=demo-client&redirect_uri=http://127.0.0.1:9095/client/callback
-``` 
-
-Now log in using _bwayne_/_wayne_ then you should get an error message in the browser (because the callback address of the redirect is not found).
-The important part can be seen in the url of the web browser:
-
-```uri
-http://127.0.0.1:9095/client/callback?session_state=8d475e5d-d096-42f9-9f0b-8ae9de7406e0&code=b646d53e-8f12-42ee-bff4-e8db1fb5874f.8d475e5d-d096-42f9-9f0b-8ae9de7406e0.58f0efec-2e91-4c63-823f-85280996f8a5
-``` 
-
-Just copy the _code_ parameter:
-
-`code=b646d53e-8f12-42ee-bff4-e8db1fb5874f.8d475e5d-d096-42f9-9f0b-8ae9de7406e0.58f0efec-2e91-4c63-823f-85280996f8a5`
-
-and use this in the _curl_ request to get an access token:
-
-```curl
-curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=authorization_code&code=[fill with your code]&redirect_uri=http://127.0.0.1:9095/client/callback&client_id=demo-client&client_secret=secret" http://localhost:9000/oauth2/token
-```
-
-As response, you should get an access token.
 
 According to the [OAuth2 specification](https://tools.ietf.org/html/rfc6749#section-4.1.2):
 
@@ -225,13 +156,30 @@ A maximum authorization code lifetime of 10 minutes is RECOMMENDED.
 The client MUST NOT use the authorization code more than once. 
 </blockquote>
 
-Spring Authorization Server uses a really short authorization code lifetime of 2 minutes by default.
-So you only have 2 minutes to grab the authorization code from the web browser and copy it to the _curl_ request!
+Spring Authorization Server uses a really short authorization code lifetime of 5 minutes by default.
+So you only have 5 minutes to grab the authorization code from the web browser and use it to exchange it into a token!
+
+## Authorization Code + Proof Key for Code Exchange (PKCE)
+
+The required parameters for the authorization code grant + PKCE are shown here:
+
+| Parameter         | Value                                  |
+|-------------------|----------------------------------------|
+| authorization url | http://localhost:9000/oauth2/authorize |
+| token url         | http://localhost:9000/oauth2/token     |
+| grant_type        | code                                   |
+| client_id         | demo-client-pkce                       |
+| scope             | openid                                 |
+| redirect_uri      | http://127.0.0.1:9095/callback         |
+
+You might notice that the client_secret is not required any more. This is because with the addition of PKCE the static credentials of 
+client_secret is replaced by dynamically generated and calculated credentials (the code verifier and code challenge).
+
+![PKCE](images/pkce.png)
+
+### Postman
+
+To use this slightly changed and improved (security wise) grant flow in postman just select _Authorization Code (with PKCE)_ 
+in the _Grant Type_ drop down box, replace the client_id with the one above and remove the client_secret value.
 
 In the next labs we won't have to create all the requests on our own, instead we will let Spring Security do the work for us.      
-
-
-
-
-
-
