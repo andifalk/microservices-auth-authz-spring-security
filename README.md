@@ -15,6 +15,7 @@ __Table of Contents__
         * [Lab 1: Resource Server](lab1)
         * [Lab 2: Testing the Resource Server](lab2)
         * [Lab 3: Call another Microservice](lab3)
+* [Slides of workshop at Spring I/O 2022](https://github.com/andifalk/microservices-auth-authz-spring-security/raw/main/slides/spring_io_2022/spring_io_2022_workshop.pdf)
 * [Feedback](#feedback)
 * [License](#license)
 
