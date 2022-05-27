@@ -368,7 +368,7 @@ with the _@Disabled_ annotation same as in line (2).
 
 To add the missing authentication to the tests you have two options:
 
-1. You can use the provided _getJwt()_ operation and the _JwtAuthzConverter()_ (see markers (3) and (4) above) and add the JWT to the call like here:
+You can use the provided _getJwt()_ operation and the _JwtAuthzConverter()_ (see markers (3) and (4) above) and add the JWT to the call like here:
 
 ```java
 // ...
@@ -381,7 +381,7 @@ Jwt jwt = getJwt(DataInitializer.PARKER_ID, List.of("USER", "ADMIN"));
 // ...
 ```                                    
 
-2. Or you can make it by more directly specifying the JWT using a lambda expression like here:
+Or you can make it by more directly specifying the JWT using a lambda expression like here:
 
 ```java
 // ...
