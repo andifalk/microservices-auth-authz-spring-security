@@ -52,7 +52,7 @@ Please start this lab with project located in _lab2/initial_.
 
 ## Integration Test
 
-Open the existing class _ToDoRestControllerIntegrationTest_ and add the missing parts.
+Open the existing class _com.example.todo.api.ToDoRestControllerIntegrationTest,_ and we will add/change the missing parts.
 
 ```java
 package com.example.todo.api;
@@ -112,11 +112,11 @@ class ToDoRestControllerIntegrationTest {
     public void setup() {
         mvc = MockMvcBuilders
                 .webAppContextSetup(context)
-                //.apply(springSecurity())
+                //.apply(springSecurity()) (1)
                 .build();
     }
 
-    @Disabled("Not running successfully without authentication")
+    @Disabled("Not running successfully without authentication") // (2)
     @DisplayName("Retrieving ToDo items for users with different roles")
     @Nested
     class FindAllToDos {
@@ -338,7 +338,7 @@ class ToDoRestControllerIntegrationTest {
         return toDoItemEntity;
     }
 
-    private Jwt getJwt(String userIdentifier, List<String> roles) {
+    private Jwt getJwt(String userIdentifier, List<String> roles) { // (3)
         return Jwt.withTokenValue("token")
                 .header("alg", "none")
                 .claim("sub", userIdentifier)
@@ -346,7 +346,7 @@ class ToDoRestControllerIntegrationTest {
                 .build();
     }
 
-    static class JwtAuthzConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
+    static class JwtAuthzConverter implements Converter<Jwt, Collection<GrantedAuthority>> { // (4)
         @Override
         public Collection<GrantedAuthority> convert(Jwt jwt) {
             return jwt.getClaimAsStringList("roles")
@@ -360,12 +360,42 @@ class ToDoRestControllerIntegrationTest {
 }
 ```
 
-Please also have a look at the other tests as well in the reference solution.
+First you need to enable support for spring security and uncomment the line with _.apply(springSecurity())_ in (1).
+Now security is enabled and all tests calling the secured endpoints will fail with a _401_ status.
+
+All tests are currently disabled as this would break the automatic build of the github action. So please remove all lines 
+with the _@Disabled_ annotation same as in line (2).
+
+To add the missing authentication to the tests you have two options:
+
+1. You can use the provided _getJwt()_ operation and the _JwtAuthzConverter()_ (see markers (3) and (4) above) and add the JWT to the call like here:
+
+```java
+// ...
+Jwt jwt = getJwt(DataInitializer.PARKER_ID, List.of("USER", "ADMIN"));
+
+            mvc.perform(
+                            get("/api/todos")
+                                    .param("user", DataInitializer.PARKER_ID)
+                                    .with(jwt().jwt(jwt).authorities(new JwtAuthzConverter())))
+// ...
+```                                    
+
+2. Or you can make it by more directly specifying the JWT using a lambda expression like here:
+
+```java
+// ...
+mvc.perform(
+    get("/api/todos/{todoIdentifier}", toDoItem.getIdentifier().toString())
+            .with(jwt()
+                    .jwt(jwt -> jwt.subject(DataInitializer.WAYNE_ID)
+                    .claim("roles", List.of("USER"))).authorities(new JwtAuthzConverter())))
+// ...                    
+```
+
+
+Please do not forget to also test security and especially authorization on the method layer as well (verify the operations annotated with_@PreAuthorize_). As this is not special for JWT/OAuth there is no lab in the workshop for this.
 
 <hr>
 
 This is the end of the lab. In the next [lab 3](../lab3) we will propagate the JWT to call another Microservice.
-
-<hr>
-
-To continue with the JWT testing server please continue at [Lab 3](../lab3).

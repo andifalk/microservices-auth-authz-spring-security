@@ -11,8 +11,8 @@
 * [Git](https://git-scm.com)
 * [Postman](https://www.getpostman.com/downloads), [Httpie](https://httpie.org/#installation), or [Curl](https://curl.haxx.se/download.html) for REST calls
 
-In case you select [Postman](https://www.getpostman.com/downloads), then the provided [Postman Collection](oidc_workshop.postman_collection.json) might be helpful.
-Just import this [Postman Collection (Version 2.1 format)](oidc_workshop.postman_collection.json) into Postman.
+In case you select [Postman](https://www.getpostman.com/downloads), then the provided [Postman Collection](../postman/todoApp.postman_collection.json) might be helpful.
+Just import this [Postman Collection (Version 2.1 format)](../postman/todoApp.postman_collection.json) into Postman.
 
 ### IntelliJ
 

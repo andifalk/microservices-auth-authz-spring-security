@@ -23,7 +23,7 @@ In the folder of lab 2 you find 2 applications:
 
 * __initial__: This is the application we will use as starting point for this lab
 * __final__: This application is the completed reference for this lab
-* __other_: This application is the other Microservice to be called from the ToDo Microservice with the propagated access token.
+* __other__: This application is the other Microservice to be called from the ToDo Microservice with the propagated access token.
 
 ## Start the Lab
 
@@ -34,8 +34,11 @@ the ToDo application has got.
 
 Please start this lab with project located in _lab3/initial_.
 
-As you can see the call to the other Microservice (to suggest ToDo's) is already implemented in the _ToDoService_.
-What's missing is the corresponding token, so currently the ToDo Microservice would report an 401 http status.
+As you can see the call to the other Microservice (to suggest ToDo's) is already implemented in the _ToDoService_ and there is already a corresponding
+api endpoint provided for this (_/api/todos/suggest_).
+What's missing is the corresponding token, so currently the ToDo Microservice would report an 401 http status if you try to call the endpoint _/api/todos/suggest_.
+
+Here is the provided ToDoService with the call to the other Microservice
 
 ```java
 package com.example.todo.service;
@@ -89,7 +92,10 @@ public class ToDoService {
 ```
 
 To enable propagating the already available access token to the other Microservice Spring please extend the bean definition of the _WebClient_
-with the servlet filter _ServletBearerExchangeFilterFunction_. This filter gets the existing access token 
+with the servlet filter _org.springframework.security.oauth2.server.resource.web.reactive.function.client.ServletBearerExchangeFilterFunction_. This filter gets the existing access token from the current authentication context and adds it to the _WebClient_ request.
+
+So to enable the _WebClient_ for token propagation add the filter to the already existing class _com.example.todo.config.WebClientConfiguration_.
+After changing this your final code should look like this:
 
 ```
 package com.example.todo.config;
@@ -112,8 +118,13 @@ public class WebClientConfiguration {
 }
 ```
 
-Please also have a look at the other tests as well in the reference solution.
+No it is time to test again and check if the additional endpoint _/api/suggest_ now is getting random suggestions from the other
+microservice. For this start the Microservice located in the _other_ folder and your adapted version of the Microservice in the _initial_ folder or just use the provided solution in the _final_ folder.
+
+To trigger the request please use postman (the request is already part of the provided postman collection), curl or httpie.
 
 <hr>
 
 This is the end of this lab and of the workshop.
+
+Please don't hesitate to provide feedback to this workshop or just send me a notice if you find error or typos.

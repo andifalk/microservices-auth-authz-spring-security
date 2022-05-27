@@ -44,6 +44,8 @@ The RESTful service for todo items and users is build using the Spring MVC annot
 The application also contains a complete documentation for the RESTful API that is automatically 
 initialized when starting the provided application. You can find this after starting the server application: [REST API documentation](http://localhost:9090/swagger-ui.html).
 
+Alternatively you can also use postman and the provided [postman collection](../postman/todoApp.postman_collection.json).
+
 The server application is already secured by basic authentication and also includes authorization using static roles. 
 
 ### Server Layers
@@ -75,11 +77,11 @@ There are two target user roles for this application:
 
 __Important:__ We will use the following users in all subsequent labs from now on:
 
-| Username | Email                    | Password | Role   |
-| ---------| ------------------------ | -------- |--------|
-| bwayne   | bruce.wayne@example.com  | wayne    | USER   |
-| ckent    | clark.kent@example.com   | kent     | USER   |
-| pparker  | peter.parker@example.com | parker   | ADMIN  |
+| Username | Email                    | Password | Role  |
+|----------|--------------------------|----------|-------|
+| bwayne   | bruce.wayne@example.com  | wayne    | USER  |
+| ckent    | clark.kent@example.com   | kent     | USER  |
+| pparker  | peter.parker@example.com | parker   | ADMIN |
 
 These users are configured for basic authentication and also later for authenticating using keycloak.
 
@@ -123,11 +125,11 @@ There are two target user roles for this client-/server application:
 * USER: Standard user who can list and add todo items
 * ADMIN: An administrator user who can list, add or remove users and can see all todo items (of all users)
 
-| Username | Email                    | Password | Role   |
-| ---------| ------------------------ | -------- |--------|
-| bwayne   | bruce.wayne@example.com  | wayne    | USER   |
-| ckent    | clark.kent@example.com   | kent     | USER   |
-| pparker  | peter.parker@example.com | parker   | ADMIN  |
+| Username | Email                    | Password | Role  |
+|----------|--------------------------|----------|-------|
+| bwayne   | bruce.wayne@example.com  | wayne    | USER  |
+| ckent    | clark.kent@example.com   | kent     | USER  |
+| pparker  | peter.parker@example.com | parker   | ADMIN |
 
 ### Provided Client application
 
